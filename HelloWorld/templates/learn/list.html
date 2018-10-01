@@ -1,0 +1,17 @@
+
+<h1>列表</h1>
+<p>遍历列表</p>
+<ul style="font-family:verdana;color:red">
+{% for i in tlist %}
+<li>{{list_name}}:{{ i }} {% if not forloop.last %},{% endif %} </li>
+{% endfor %}
+</ul>
+</br>
+</br>
+<ul>
+{% for athlete in athlete_list %}
+    <li>{{ athlete.name }}</li>
+{% empty %}
+    <li>athlete_list:列表为空或不存</li>
+{% endfor %}
+</ul>

@@ -1,0 +1,12 @@
+<h1>字典</h1>
+<p>遍历字典</p>
+
+<ul style="font-family:verdana;color:red">
+{% for key,value in tdict.items %}
+<li>{{key}}:{{value}} {{forloop.revcounter}}</li>
+{% endfor %}
+</ul>
+
+<p>直接取值</p>
+<p>A:{{ tdict.A }} and B:{{ tdict.B }}</p>
+

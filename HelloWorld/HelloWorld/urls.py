@@ -16,16 +16,13 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from django.conf.urls import url
-
-
 from learn import views as learn_views
 from calc import views as calc_views
 from . import view
+
 urlpatterns = [
     path('admin/', admin.site.urls),
-	url(r'hello', view.hello),
-	url(r'learn', learn_views.index),
+	url(r'^$', learn_views.home, name='home'),
 	path('add/', calc_views.add, name='add'),
-	path('add/<int:a>/<int:b>/', calc_views.add2, name='add2')
-	,(r'^latest/$', views.latest_books),
+	path('new_add/<int:a>/<int:b>/', calc_views.add2, name='add2')
 ]
