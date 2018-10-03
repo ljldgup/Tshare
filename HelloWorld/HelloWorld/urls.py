@@ -18,11 +18,15 @@ from django.urls import path
 from django.conf.urls import url
 from learn import views as learn_views
 from calc import views as calc_views
+from tshare import views as tshare_views
 from . import view
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-	url(r'^$', learn_views.home, name='home'),
-	path('add/', calc_views.add, name='add'),
-	path('new_add/<int:a>/<int:b>/', calc_views.add2, name='add2')
+	url(r'^$', learn_views.home, name = 'home'),
+	path('add/', calc_views.add, name = 'add'),
+	path('new_add/<int:a>/<int:b>/', calc_views.add2, name = 'add2' ),
+	url('trade_report/', tshare_views.trade_report,name = 'trade_report'),
+	path('trade_detail/<str:r_name>/', tshare_views.trade_detail, name='trade_detail'),
+	url(r'echarts*', tshare_views.echarts, name = 'echarts')
 ]

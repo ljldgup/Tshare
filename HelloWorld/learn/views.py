@@ -17,4 +17,4 @@ def home(request):
 	temp['tdict']['B']='Cindy'
 	temp['tdict']['C']='Mei'
 	temp['tdict']['number']=142
-	return render(request, 'learn/home.html',temp)
+	return render(request, 'template/home.html',temp)

@@ -1,19 +1,6 @@
-｛% load staticfiles %}
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>5分钟上手ECharts</title>
-    <!-- 引入ECharts文件 -->
-    <script type="text/javascript" src="./echarts.min.js"></script>
-</head>
-<body>
-
-    <!-- 为ECharts准备一个具备大小（宽高）的DOM -->
+		    <!-- 为ECharts准备一个具备大小（宽高）的DOM -->
     <div id="main" style="width: 1200px; height: 600px;"></div>
-    
-<!-- js代码 -->
-    <script type="text/javascript">
+	<script type="text/javascript">
 
         /*基于准备好的dom，初始化echarts实例*/
         var myChart = echarts.init(document.getElementById('main'));
@@ -347,6 +334,3 @@
         // 使用刚指定的配置项和数据显示图表
         myChart.setOption(option);
     </script>
-
-</body>
-</html>

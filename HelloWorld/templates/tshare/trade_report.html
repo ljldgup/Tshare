@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>交易汇总</title>
+</head>
+	<body>
+		<h1>个人交易汇总</h1>
+		<form action="/trade_report/" method="get">
+			股票 <input type="text" name="r_name" value="{{r_name| default_if_none:""}}"> <br>
+			开始时间<input type="date" name="st_date" value="{{st_date | default_if_none:"2016-01-01"}}"> <br>
+			结束时间<input type="date" name="ed_date" value="{{ed_date | default_if_none:""}}">
+			<input type="submit" value="提交">
+		</form>
+		<table class="dataintable" border="1">
+			<tbody>
+				<tr>
+					<th>股票</th>
+					<th>最初买入日期</th>
+					<th>最终卖出日期</th>
+					<th>总买入金额</th>
+					<th>总卖出金额</th>
+					<th>总持股时间</th>
+					<th>盈亏金额</th>
+					<th>盈亏百分比</th>
+				</tr>
+			{% for i in stat_data %}
+				<tr>
+					<td><a href="/trade_detail/{{i.name}}/" target="_blank">{{i.name}}</a></td>
+					<td>{{i.i_date}}</td>
+					<td>{{i.o_date}}</td>
+					<td>{{i.i_total}}</td>
+					<td>{{i.o_total}}</td>
+					<td>{{i.time}}</td>
+					<td>{{i.earning}}</td>
+					<td>{{i.pct}}</td>
+				</tr>
+			{% endfor %}
+			</tbody>
+		</table>
+	</body>
+	
+</html>

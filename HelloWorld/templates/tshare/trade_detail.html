@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>{{r_name}}交易明细</title>
+	<script type="text/javascript" src="echarts.min.js"></script>
+</head>
+	<body>
+		<h1>{{r_name}} 交易明细 </h1>
+		<table class="dataintable" border="1" style="float-div{ float:left }">
+			<tbody>
+				<tr>
+					<th>股票</th>
+					<th>日期</th>
+					<th>操作</th>
+					<th>手数</th>
+					<th>买入价格</th>
+					<th>金额</th>
+				</tr>
+			{% for i in ori_data %}
+				<tr>
+					<td>{{i.name}}</td>
+					<td>{{i.date}}</td>
+					<td>{{i.operation}}</td>
+					<td>{{i.amount}}</td>
+					<td>{{i.price}}</td>
+					<td>{{i.sum}}</td>
+				</tr>
+			{% endfor %}
+			</tbody>
+		</table>
+		{% include 'tshare\k-lines.html' %}
+	</body>
+</html>
