@@ -4,46 +4,61 @@
     <title>交易汇总</title>
 </head>
 	<body style="background:rgb(250,250,255)">
-		<h1>个人交易汇总</h1>
-		<form action="/trade_report/" method="get">
-			股票 <input type="text" name="r_name" value="{{r_name| default_if_none:""}}"> <br>
-			开始时间<input type="date" name="st_date" value="{{st_date | default_if_none:"2017-01-01"}}"> <br>
-			结束时间<input type="date" name="ed_date" value="{{ed_date | default_if_none:""}}">
-			<input type="submit" value="提交">
-		</form>
-		<table class="dataintable" border="1">
-			<tbody>
-				<tr>
-					<th>股票</th>
-					<th>最初买入日期</th>
-					<th>最终卖出日期</th>
-					<th>总买入金额</th>
-					<th>总卖出金额</th>
-					<th>总持股时间</th>
-					<th>盈亏金额</th>
-					<th>盈亏百分比</th>
-				</tr>
-			{% for i in stat_data %}
-				<tr>
-					<td><a href="/trade_detail/{{i.code}}/" target="_blank">{{i.name}}</a></td>
-					<td>{{i.i_date}}</td>
-					<td>{{i.o_date}}</td>
-					<td>{{i.i_total}}</td>
-					<td>{{i.o_total}}</td>
-					<td>{{i.time}}</td>
-					
-					{% if i.earning >= 0 %}
-					<td style="color:red">{{i.earning}}</td>
-					<td style="color:red">{{i.pct}}</td>
-					{% else %}
-					<td style="color:green">{{i.earning}}</td>
-					<td style="color:green">{{i.pct}}</td>
-					{% endif %}
-					
-				</tr>
-			{% endfor %}
-			</tbody>
-		</table>
+	
+		<div style="width:1000px">
+			<h1>个人交易汇总</h1>
+		</div>
+		
+		<div style="width:1100px">
+			<form action="/trade_report/" method="get" style="float:left; width:760px;">
+				股票 <input type="text" name="r_name" value="{{r_name| default_if_none:""}}"> <br>
+				开始时间<input type="date" name="st_date" value="{{st_date | default_if_none:"2017-01-01"}}"> <br>
+				结束时间<input type="date" name="ed_date" value="{{ed_date | default_if_none:""}}">
+				<input type="submit" value="提交">
+			</form>
+			<div "float:right; width:300px; margin-left:8px">
+				<h2>交易统计结果</h2>
+			</div>
+		</div>
+		<div style="width:1100px">
+			<table border="1" style="float:left; width:760px;" >
+				<tbody>
+					<tr>
+						<th>股票</th>
+						<th>最初买入日期</th>
+						<th>最终卖出日期</th>
+						<th>总买入金额</th>
+						<th>总卖出金额</th>
+						<th>总持股时间</th>
+						<th>盈亏金额</th>
+						<th>盈亏百分比</th>
+					</tr>
+				{% for i in stat_data %}
+					<tr>
+						<td><a href="/trade_detail/{{i.code}}/" target="_blank">{{i.name}}</a></td>
+						<td>{{i.i_date}}</td>
+						<td>{{i.o_date}}</td>
+						<td>{{i.i_total}}</td>
+						<td>{{i.o_total}}</td>
+						<td>{{i.time}}</td>
+						
+						{% if i.earning >= 0 %}
+						<td style="color:red">{{i.earning}}</td>
+						<td style="color:red">{{i.pct}}</td>
+						{% else %}
+						<td style="color:green">{{i.earning}}</td>
+						<td style="color:green">{{i.pct}}</td>
+						{% endif %}
+						
+					</tr>
+				{% endfor %}
+				</tbody>
+			</table>
+		
+			<div style="float:left; width:300px; margin-left:8px">
+				<p>......</p>
+			</div>
+		</div>
 	</body>
 	
 </html>
