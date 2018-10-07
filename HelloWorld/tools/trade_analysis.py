@@ -6,27 +6,49 @@ Created on Sun Aug  5 00:18:51 2018
 """
 import pandas as pd
 from sqlalchemy import create_engine
+import dbtest
 
 def kp2dig(number):
     #范围两位小数百分比
     return float('%.5f' % (number))
 
+#补全股票代码
+def code_complete(code):
+    s_code = str(code)
+    for i in range(6-len(s_code)):
+        s_code = '0' + s_code
+    return s_code
+
+
 #每个股票的每次交易数据统计
-def get_trade(data,):
+def get_trade(data):
 
     index = -1
 
-    trade_data = pd.DataFrame(columns = ["name", "i_date", "o_date", "i_total","o_total","amount"])
+    trade_data = pd.DataFrame(columns = ["code","name", "i_date", "o_date", "i_total","o_total","amount"])
 
     for name in data.name.drop_duplicates():
         t_count = 0
-
+        getsum = 0
+        getamount = 0
         for i in data[data.name == name].index:
-
+            if data.at[i,'amount'] < 0:
+                getsum -= int(data.at[i,'sum'])
+            else:
+                getsum += int(data.at[i,'sum'])
+            getamount += int(data.at[i,'amount'])
+            data.at[i,'getamount'] = getamount
+            
+            #手数为0后持仓就是亏损
+            if getamount == 0:
+                data.at[i,'getsum'] = -getsum
+                getsum = 0
+                
             #新的交易
             if t_count == 0:
                 index += 1
                 trade_data.at[index,"name"] = name
+                trade_data.at[index,"code"] = data.at[i,'code']
                 trade_data.at[index,"i_date"] = data.at[i,'date']
                 trade_data.at[index,"i_total"] = int(data.at[i,'sum'])
                 trade_data.at[index,"o_total"] = 0
@@ -157,7 +179,8 @@ if __name__ == '__main__':
 
     df['date'] = pd.to_datetime(df['date'],format="%Y-%m-%d",errors='raise')
     df['date'] = df.date.apply(lambda x:x.date())
-
+    df['date_str'] = df.date.apply(lambda x:str(x))
+    df['code'] = df.code.apply(code_complete)
     #change 64types
     for i in df:
         type_str = str(df[i].dtype)
@@ -185,4 +208,7 @@ if __name__ == '__main__':
     
     df['id']=  df.index
     df.to_sql("original_trade_data",con=yconnect,if_exists='replace')
+    
+    #for code in df.code.drop_duplicates():
+        #dbtest.storekdata(code)
 

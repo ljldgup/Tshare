@@ -4,9 +4,11 @@
 	<title>{{r_name}}交易明细</title>
 	<script type="text/javascript" src="echarts.min.js"></script>
 </head>
-	<body>
+	<body style="background:rgb(250,250,255)">
+		{% include 'tshare\k-lines.html' %}
+			
 		<h1>{{r_name}} 交易明细 </h1>
-		<table class="dataintable" border="1" style="float-div{ float:left }">
+		<table class="dataintable" border="1" style="float-div{ float:left};">
 			<tbody>
 				<tr>
 					<th>股票</th>
@@ -15,6 +17,8 @@
 					<th>手数</th>
 					<th>买入价格</th>
 					<th>金额</th>
+					<th>持有手数</th>
+					<th>持有金额</th>
 				</tr>
 			{% for i in ori_data %}
 				<tr>
@@ -24,10 +28,21 @@
 					<td>{{i.amount}}</td>
 					<td>{{i.price}}</td>
 					<td>{{i.sum}}</td>
+					<td>{{i.getamount}}</td>
+										
+					{% if i.getamount > 0 %}
+					<td> - </td>
+					{% else %}
+						{% if i.getsum > 0 %}
+						<td style="color:red">{{i.getsum}}</td>
+						{% else %}
+						<td style="color:green">{{i.getsum}}</td>
+						{% endif %}
+					{% endif %}
 				</tr>
 			{% endfor %}
 			</tbody>
 		</table>
-		{% include 'tshare\k-lines.html' %}
+
 	</body>
 </html>
