@@ -12,7 +12,7 @@ def trade_report(request):
 	st_date = None
 	ed_date = None
 	r_name =None
-	stat_data = tmd.StatisticTradeData.objects.all().order_by('i_date')
+	stat_data = tmd.StatisticTradeData.objects.all().order_by('o_date')
 	
 	#时间大于等于st_date
 	try:
