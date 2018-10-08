@@ -3,7 +3,7 @@
 <head>
     <title>交易汇总</title>
 </head>
-	<body style="background:rgb(250,250,255)">
+	<body style="background:rgb(250, 250, 255)">
 	
 		<div style="width:1000px">
 			<h1>个人交易汇总</h1>
@@ -21,7 +21,7 @@
 			</div>
 		</div>
 		<div style="width:1100px">
-			<table border="1" style="float:left; width:760px;" >
+			<table border="1" style="float:left; width:760px;" id="stat_data">
 				<tbody>
 					<tr>
 						<th>股票</th>
@@ -54,10 +54,52 @@
 				{% endfor %}
 				</tbody>
 			</table>
-		
-			<div style="float:left; width:300px; margin-left:8px">
-				<p>......</p>
+			<div style="float:left; width:300px; margin-left:8px" id="stat_res">
+				<script type="text/javascript">
+				/** 
+				 * 遍历表格内容进行统计
+				 */
+					var mytable = document.getElementById("stat_data");
+					var data = {t_win_earning:0, t_los_earning:0, t_win_num:0, t_los_num:0, t_win_10_num:0, t_los_5_num:0, t_win_10_earning:0, t_los_5_earning:0};
+					var tmp = 0;
+					var pct = 0;
+					
+					for(var i=1, rows=mytable.rows.length; i<rows; i++){
+					  tmp = parseFloat(mytable.rows[i].cells[6].innerHTML);
+					  pct = parseFloat(mytable.rows[i].cells[7].innerHTML);
+					  if(tmp > 0){
+						data.t_win_earning += tmp;
+						data.t_win_num += 1;
+						if(pct > 10){
+							data.t_win_10_earning += tmp;
+							data.t_win_10_num += 1;
+						}
+					  }
+					  else{
+						data.t_los_earning += tmp;
+						data.t_los_num += 1;
+						if(pct < -5){
+							data.t_los_5_earning += tmp;
+							data.t_los_5_num += 1;
+						}
+					  }
+					}
+					
+					t_rate = parseInt(data.t_win_num/(data.t_los_num + data.t_win_num)*1000)/10.0
+					document.write("<p>总收益：" + data.t_win_earning + "</p>");
+					document.write("<p>总亏损：" + data.t_los_earning + "</p>");
+					document.write("<p>合计：" +  (data.t_win_earning + data.t_los_earning) + "</p>");
+					document.write("<p>成功次数：" + data.t_win_num + "</p>");
+					document.write("<p>失败次数：" + data.t_los_num + "</p>");
+					document.write("<p>成功率：" + t_rate + "&#37</p>");
+					document.write("<p>盈利大于10%的次数：" + data.t_win_10_num + "</p>");
+					document.write("<p>盈利大于10%的总收益：" + data.t_win_10_earning + "</p>");
+					document.write("<p>亏损大于5%的次数：" + data.t_los_5_num + "</p>");
+					document.write("<p>亏损大于5%的总收益：" + data.t_los_5_earning + "</p>");
+				</script>
 			</div>
+			
+
 		</div>
 	</body>
 	
