@@ -9,8 +9,27 @@ import pandas as pd
 from sqlalchemy import create_engine
 import tushare as ts
 import time
+import sys
+sys.path.append("..")
+from HelloWorld import settings
 
-def storekdata(code,my_conn):
+url = 'mysql+pymysql://ljl:123123@localhost:3306/django_test?charset=utf8'
+# = 'sqlite:///D:\work\DjangoTest\DjangoTest\HelloWorld\db.sqlite3'
+yconnect = create_engine(url)
+
+#delete k data
+def refresh_k_data(table,my_conn = yconnect):
+    try:
+        if('sqlite' in settings.DATABASES['default']['ENGINE']):
+            pd.read_sql_query('delete from ' + table + ';', con = my_conn)
+            pd.read_sql_query('update sqlite_sequence SET seq = 0 where name = ' + table + ';', con = my_conn)
+        else:
+            pd.read_sql_query('truncate table ' + table + ';', con = my_conn)
+    except BaseException as e:
+        print(e)
+
+#check if code's k data exists
+def storekdata(code,my_conn = yconnect):
     data = pd.read_sql_query('select * from k_bfq where code = ' + code + ';', con = my_conn)
     print(len(data))
     if (len(data) == 0):
@@ -23,6 +42,5 @@ def storekdata(code,my_conn):
         print(code + ':already in database')
 
 if __name__ == '__main__':
-    url = 'sqlite:///D:\work\DjangoTest\DjangoTest\HelloWorld\db.sqlite3'
-    yconnect = create_engine(url)
-    storekdata('600125',yconnect)
+    refresh_k_data('k_bfq')
+    storekdata('600125')

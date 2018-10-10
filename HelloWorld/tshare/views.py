@@ -1,11 +1,17 @@
 from django.shortcuts import render
 from . import models as tmd
+from . import dbtools
 from datetime import datetime
-from tools import dbtest
 # Create your views here.
 
+dbrefreshed = False
+
 def trade_report(request):
-	
+	global dbrefreshed
+	if dbrefreshed == False:
+		dbtools.refresh_k_data('k_bfq',)
+		dbrefreshed = True
+		
 	data = {}
 	
 	# 当提交表单时
@@ -46,8 +52,12 @@ def trade_report(request):
 	return render(request, 'tshare/trade_report.html',data)
 	
 def trade_detail(request,r_code):
+
 	ori_data = tmd.OriginalTradeData.objects.filter(code = r_code)
 	k_data = tmd.K_days.objects.filter(code = r_code)
+	#store_k_data to tmp table
+	dbtools.storekdata(r_code)
+	
 	data = {}
 	data['ori_data'] = ori_data;
 	data['r_code'] = r_code
