@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 import os
 import sys
-from tools import dbtest
+from tshare import dbtools
 
 
 
 if __name__ == '__main__':
-    dbtest.user_proxy("http://cn-proxy.jp.oracle.com:80")
+    dbtools.user_proxy("http://cn-proxy.jp.oracle.com:80")
 
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'HelloWorld.settings')
     try:
