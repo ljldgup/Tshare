@@ -17,5 +17,6 @@ def storekdata(code,yconnect):
 #data2['id'] = data2.index.
 #data2.to_sql("basic",con=yconnect,if_exists='replace')
 if __name__ == '__main__':
+
     yconnect = create_engine('sqlite://D:/work/DjangoTest/DjangoTest/HelloWorld/db.sqlite3')
     storekdata('600859')

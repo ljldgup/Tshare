@@ -2,7 +2,17 @@
 import os
 import sys
 
+def use_proxy():
+
+    HTTP_PROXY = "http_proxy"
+    HTTPS_PROXY = "https_proxy"
+    os.environ[HTTP_PROXY] = "cn-proxy.jp.oracle.com:80"
+    os.environ[HTTPS_PROXY] = "cn-proxy.jp.oracle.com:80"
+
+
 if __name__ == '__main__':
+    use_proxy()
+
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'HelloWorld.settings')
     try:
         from django.core.management import execute_from_command_line
