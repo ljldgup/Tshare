@@ -7,6 +7,14 @@ Created on Tue Oct  2 20:29:48 2018
 from sqlalchemy import create_engine
 import tushare as ts
 import time
+import urllib.request
+
+def user_proxy(proxy_addr):
+
+    proxy = urllib.request.ProxyHandler({'http':proxy_addr})
+    opener = urllib.request.build_opener(proxy, urllib.request.HTTPHandler)
+    urllib.request.install_opener(opener)
+
 
 def storekdata(code,yconnect):
 
@@ -17,6 +25,6 @@ def storekdata(code,yconnect):
 #data2['id'] = data2.index.
 #data2.to_sql("basic",con=yconnect,if_exists='replace')
 if __name__ == '__main__':
-
-    yconnect = create_engine('sqlite://D:/work/DjangoTest/DjangoTest/HelloWorld/db.sqlite3')
-    storekdata('600859')
+    user_proxy("http://cn-proxy.jp.oracle.com:80")
+    yconn = create_engine('sqlite:///db.sqlite3')
+    storekdata('600859',yconn)

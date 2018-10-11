@@ -11,6 +11,7 @@ import tushare as ts
 import time
 import sys
 import os
+import urllib.request
 
 sys.path.append("..")
 from HelloWorld import settings
@@ -21,6 +22,11 @@ yconnect = create_engine(url)
 
 
 #delete k data
+def user_proxy(proxy_addr):
+    proxy = urllib.request.ProxyHandler({'http':proxy_addr})
+    opener = urllib.request.build_opener(proxy, urllib.request.HTTPHandler)
+    urllib.request.install_opener(opener)
+
 def refresh_k_data(table,my_conn = yconnect):
     try:
         if('sqlite' in settings.DATABASES['default']['ENGINE']):
@@ -45,11 +51,6 @@ def storekdata(code,my_conn = yconnect):
         print(code + ':already in database')
 
 if __name__ == '__main__':
-    HTTP_PROXY = "http_proxy"
-    HTTPS_PROXY = "https_proxy"
-    os.environ[HTTP_PROXY] = "cn-proxy.jp.oracle.com:80"
-    os.environ[HTTPS_PROXY] = "cn-proxy.jp.oracle.com:80"
-    print (os.environ["http_proxy"])
-    print (os.environ["https_proxy"])
-    refresh_k_data('k_bfq')
-    storekdata('600125')
+    user_proxy("http://cn-proxy.jp.oracle.com:80")
+    yconn = create_engine('sqlite:///db.sqlite3')
+    storekdata('600859',yconn)

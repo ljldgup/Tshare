@@ -1,17 +1,12 @@
 #!/usr/bin/env python
 import os
 import sys
+from tools import dbtest
 
-def use_proxy():
-
-    HTTP_PROXY = "http_proxy"
-    HTTPS_PROXY = "https_proxy"
-    os.environ[HTTP_PROXY] = "cn-proxy.jp.oracle.com:80"
-    os.environ[HTTPS_PROXY] = "cn-proxy.jp.oracle.com:80"
 
 
 if __name__ == '__main__':
-    use_proxy()
+    dbtest.user_proxy("http://cn-proxy.jp.oracle.com:80")
 
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'HelloWorld.settings')
     try:
