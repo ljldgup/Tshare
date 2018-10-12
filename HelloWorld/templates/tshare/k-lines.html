@@ -55,6 +55,44 @@
             return result;
         }
 
+		    //计算MA平均线，N日移动平均线=N日收盘价之和/N  dayCount要计算的天数(5,10,20,30)
+        function calculateMA(dayCount) {
+            var result = [];
+            for (var i = 0, len = data0.values.length; i < len; i++) {
+                if (i < dayCount) {
+                    result.push('-');
+                    //alert(result);
+                    continue;   //结束单次循环，即不输出本次结果
+                }
+                var sum = 0;
+                for (var j = 0; j < dayCount; j++) {
+                    //收盘价总和
+                    sum += data0.values[i - j][1];
+                    //alert(sum);
+                }
+                result.push(sum / dayCount);
+               // alert(result);
+            }
+            return result;
+        }    
+		
+		
+		//计算涨跌幅
+        function calculatePct() {
+            var result = [];
+            for (var i = 0, len = data0.values.length; i < len; i++) {
+                if (i < 1) {
+                    result.push('-');
+                    continue;   //结束单次循环，即不输出本次结果
+                }
+				
+                var pct = 0;
+                pct = parseInt(((data0.values[i][1] - data0.values[i - 1][1])/data0.values[i - 1][1])*1000)/1000;
+                result.push(pct);
+               // alert(result);
+            }
+            return result;
+        }
 
 
         option = {
@@ -66,10 +104,24 @@
                 trigger: 'axis',    //触发类型：坐标轴触发
                 axisPointer: {  //坐标轴指示器配置项
                     type: 'cross'   //指示器类型，十字准星
-                }
+                },
+				formatter: function (params) {
+				
+					var res = params[0].name;
+					res += '<br/>开盘: ' + params[0].value[1];
+					res += '<br/>收盘: ' + params[0].value[2];
+					res += '<br/>最低: ' + params[0].value[3];
+					res += '<br/>最高: ' + params[0].value[4];
+					res += '<br/>幅度: ' + params[3].value;
+					return res;
+				}
             },
             legend: {   //图例控件，点击图例控制哪些系列不现实
-                data: ['日K', 'MA5', 'MA20', 'MA200']
+                data: ['日K', 'MA5', 'MA20', 'MA200'],
+				selected: {
+					// 不选中'涨幅'
+					'pct': false
+				}
             },
             grid: {     //直角坐标系
                 show:true,
@@ -113,40 +165,49 @@
             series: [   //图表类型
                 {
                     name: '日K',
-                    type: 'candlestick',    //K线图
+                    type: 'k',    //K线图
                     data: data0.values,     //y轴对应的数据
-
+					itemStyle: {
+							normal: {
+								color: 'red',           // 阳线填充颜色
+								color0: 'lightgreen',   // 阴线填充颜色
+								lineStyle: {
+									width: 4,
+									color: 'orange',    // 阳线边框颜色
+									color0: 'green'     // 阴线边框颜色
+								}
+							},
+							emphasis: {
+								color: 'black',         // 阳线填充颜色
+								color0: 'white'         // 阴线填充颜色
+							}
+						},
 ////////////////////////图标标注/////////////////////////////
 				markPoint: {
-					label: {
-						normal: {
-							formatter: function (param) {
-								return param.value;
+						label: {
+							normal: {
+								formatter: function (param) {
+									return param.value;
+								}
 							}
-						}
-					},
-					data: [
-						{% for i in ori_data %}
-						{
-							name: '{{i.operation}} {{i.id}}',
-							coord: ['{{i.date|date:'Y-m-d'}}',{{i.price}}],
-							value: {{i.price}},
-							itemStyle: {
-								{% if '买入' in i.operation%}
-								normal: {color: 'rgb(128,0,0)'}
-								{% else %}
-								normal: {color: 'rgb(0,128,0)'}
-								{% endif %}
-							}
-						}{% if not forloop.last %},{% endif %}
-						{% endfor %}
-					],
-					tooltip: {
-						formatter: function (param) {
-							return param.name + '<br>' + (param.data.coord || '');
-						}
+						},
+						data: [
+							{% for i in ori_data %}
+							{
+								name: '{{i.operation}} {{i.id}}',
+								coord: ['{{i.date|date:'Y-m-d'}}',{{i.price}}],
+								value: {{i.price}},
+								itemStyle: {
+									{% if '买入' in i.operation%}
+									normal: {color: 'rgb(128,0,0)'}
+									{% else %}
+									normal: {color: 'rgb(0,128,0)'}
+									{% endif %}
+								}
+							}{% if not forloop.last %},{% endif %}
+							{% endfor %}
+						]
 					}
-				}
 
 
 /////////////////////////////////图标标线///////////////////////////
@@ -175,6 +236,15 @@
                     name: 'MA200',
                     type: 'line',
                     data: calculateMA(250),
+                    smooth: true,
+                    lineStyle: {
+                        normal: {opacity: 0.5}
+                    }
+                },
+				{
+                    name: 'pct',
+                    type: 'line',
+                    data: calculatePct(),
                     smooth: true,
                     lineStyle: {
                         normal: {opacity: 0.5}

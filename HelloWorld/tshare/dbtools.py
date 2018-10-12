@@ -17,7 +17,7 @@ sys.path.append("..")
 from HelloWorld import settings
 
 #url = 'mysql+pymysql://ljl:123123@localhost:3306/django_test?charset=utf8'
-url= 'sqlite:///D:\work\DjangoTest\DjangoTest\HelloWorld\db.sqlite3'
+url= 'sqlite:///'+settings.DATABASES['default']['NAME']
 yconnect = create_engine(url)
 
 
