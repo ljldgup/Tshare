@@ -1,40 +1,39 @@
-		    <!-- 为ECharts准备一个具备大小（宽高）的DOM -->
+            <!-- 为ECharts准备一个具备大小（宽高）的DOM -->
     <div id="main" style="width: 1200px; height: 600px; float-div{ float:right};"></div>
-	<script type="text/javascript">
+    <script type="text/javascript">
 
         /*基于准备好的dom，初始化echarts实例*/
         var myChart = echarts.init(document.getElementById('main'));
 
         // 数据意义：开盘(open)，收盘(close)，最低(lowest)，最高(highest)
-        var data0 = splitData([
-			{% for i in k_data %}
-			['{{i.date}}',{{i.open}},{{i.close}},{{i.low}},{{i.high}}]{% if not forloop.last %},{% endif %}
-			{% endfor %}
-        ]);
+        rData = [
+        //日期上的双引号 不能删，不然会变成年丰
+            {% for i in k_data %}
+            ['{{i.date}}',{{i.open}},{{i.close}},{{i.low}},{{i.high}},{{i.volume}}]{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ]
+        
 
         //切割数组，把数组中的日期和数据分离，返回数组中的日期和数据
         function splitData(rawData) {
             var categoryData = [];
             var values = [];
-            
+            var volumns = [];
             for (var i = 0; i < rawData.length; i++) {
-                //splice 返回每组数组中被删除的第一项，即返回数组中被删除的日期 
-                //alert(rawData[i].splice(0, 1)[0]);
-                //categoryData  日期  把返回的日期放到categoryData[]数组中
                 categoryData.push(rawData[i].splice(0, 1)[0]);
-                //alert(categoryData);
-
-                //数据数组，即数组中除日期外的数据
-               // alert(rawData[i]);
-                values.push(rawData[i])
+                values.push(rawData[i]);
+                volumns.push(rawData[i][4]);
             }
             return {
-                categoryData: categoryData, //数组中的日期 x轴对应的日期
-                values: values              //数组中的数据 y轴对应的数据
+                categoryData: categoryData,
+                values: values,
+                volumns: volumns
             };
         }
-
-    //计算MA平均线，N日移动平均线=N日收盘价之和/N  dayCount要计算的天数(5,10,20,30)
+        
+        var data0 = splitData(rData);
+		
+		//计算MA平均线，N日移动平均线=N日收盘价之和/N  dayCount要计算的天数(5,10,20,30)
         function calculateMA(dayCount) {
             var result = [];
             for (var i = 0, len = data0.values.length; i < len; i++) {
@@ -54,106 +53,188 @@
             }
             return result;
         }
+        //计算涨幅等百分比数据
+        function calculatePct(dayCount) {
+            var pct = [];
+			var amp = [];
+            var tmp
+            for (var i = 0, len = data0.values.length; i < len; i++) {
+            
+                if (i < 1) {
+                    pct.push('-');
+					amp.push('-');
+                    //alert(result);
+                    continue;   //结束单次循环，即不输出本次结果
+                }
+                tmp = ((data0.values[i][1] - data0.values[i-1][1]) / data0.values[i-1][1]*100).toFixed(2)  
+                pct.push(tmp);
+                tmp = ((data0.values[i][3] - data0.values[i][2]) / data0.values[i-1][1]*100).toFixed(2)  
+                amp.push(tmp);
+               // alert(result);
+            }
+            return {
+				pct:pct,
+				amp:amp
+			}
+        }
 
-
-
+        
+        var pct_data = calculatePct(data0.values);
+        
         option = {
             title: {    //标题
                 text: '{{r_name}}',
                 left: 0
             },
             tooltip: {  //提示框
-                trigger: 'axis',    //触发类型：坐标轴触发
-                axisPointer: {  //坐标轴指示器配置项
-                    type: 'cross'   //指示器类型，十字准星
-                }
+                trigger: 'axis',
+                axisPointer: {
+                    type: 'cross'
+                },
+                backgroundColor: 'rgba(245, 245, 245, 0.8)',
+                borderWidth: 1,
+                borderColor: '#ccc',
+                padding: 10,
+                textStyle: {
+                    color: '#000'
+                },
+                formatter: function (params) {
+                        param = params[0];
+                        var tmp = '日期: ' + param.name + '<hr size=1 style="margin: 3px 0">'
+                        
+                        //引入成交量后，两个图显示不一致，所以使用全局变量
+                        tmp += '开盘: ' + this.data0.values[param.dataIndex][0] + '<br/>'
+                        tmp += '收盘: ' + this.data0.values[param.dataIndex][1] + '<br/>'
+                        tmp += '最低: ' + this.data0.values[param.dataIndex][2] + '<br/>'
+                        tmp += '最高: ' + this.data0.values[param.dataIndex][3] + '<br/>'
+                        //这个函数是在外部调用的所以要写option
+                        if (this.pct_data.pct[param.dataIndex] > 0 ) {
+                                tmp += '涨幅: <span style="color:red">' + this.pct_data.pct[param.dataIndex] + '&#37;</span><br/>'; 
+                              } else {
+                                tmp += '涨幅: <span style="color:green">' + this.pct_data.pct[param.dataIndex] + '&#37;</span><br/>';
+                        };
+						tmp +='<hr size=1 style="margin: 3px 0">'
+                        tmp += '振幅: ' + this.pct_data.amp[param.dataIndex] + '&#37;<br/>';
+                        //个人持仓量
+                        tmp +='<hr size=1 style="margin: 3px 0">'
+                        tmp += '持仓手数: ' + '' + '<br/>'
+                        tmp += '持仓金额: ' + '' + '<br/>'
+                        tmp += '盈亏金额: ' + '' + '<br/>'
+                        tmp += '盈亏金额: ' + '' + '<br/>'
+                        return tmp;
+                    }
             },
             legend: {   //图例控件，点击图例控制哪些系列不现实
                 data: ['日K', 'MA5', 'MA20', 'MA200']
             },
-            grid: {     //直角坐标系
-                show:true,
-                left: '10%',    //grid组件离容器左侧的距离
-                right: '10%',
-                bottom: '15%',
-                //backgroundColor:'#ccc'
-            },
-            xAxis: {
-                type: 'category',   //坐标轴类型，类目轴
-                data: data0.categoryData,
-                //scale: true,  //只在数字轴中有效
-                boundaryGap : false,    //刻度作为分割线，标签和数据点会在两个刻度上
-                axisLine: {onZero: false},
-                splitLine: {show: false},   //是否显示坐标轴轴线
-                //splitNumber: 20,    //坐标轴的分割段数，预估值，在类目轴中无效
-                min: 'dataMin', //特殊值，数轴上的最小值作为最小刻度
-                max: 'dataMax'  //特殊值，数轴上的最大值作为最大刻度
-            },
-            yAxis: {
-                scale: true,    //坐标刻度不强制包含零刻度
-                splitArea: {
-                    show: true  //显示分割区域
-                }
-            },
-            dataZoom: [     //用于区域缩放
-                {
-                    filterMode:'filter',    //当前数据窗口外的数据被过滤掉来达到数据窗口缩放的效果  默认值filter
-                    type: 'inside', //内置型数据区域缩放组件
-                    start: 50,      //数据窗口范围的起始百分比
-                    end: 100        //数据窗口范围的结束百分比
-                },
-                {
-                    show: true,
-                    type: 'slider', //滑动条型数据区域缩放组件
-                    y: '90%',
-                    start: 50,
-                    end: 100
-                }
-            ],
+			grid: [
+				{
+					left: '10%',
+					right: '8%',
+					height: '60%'
+				},
+				{
+					left: '10%',
+					right: '8%',
+					bottom: '15%',
+					height: '8%'
+				}
+			],
+			xAxis: [
+				{
+					type: 'category',
+					data: data0.categoryData,
+					scale: true,
+				},
+				{
+					type: 'category',
+					gridIndex: 1,
+					data: data0.categoryData,
+				}
+			],
+			yAxis: [
+				{
+					scale: true,
+					splitArea: {
+						show: true
+					}
+				},
+				{
+					scale: true,
+					gridIndex: 1,
+					splitNumber: 2,
+				}
+			],
+			dataZoom: [
+				{
+					type: 'inside',
+					//k线图 和成交量同时缩放
+					xAxisIndex: [0, 1],
+					//初始位置
+					start: 98,
+					end: 100
+				},
+				{
+					show: true,
+					xAxisIndex: [0, 1],
+					type: 'slider',
+					top: '85%',
+					start: 98,
+					end: 100
+				}
+			],
             series: [   //图表类型
                 {
                     name: '日K',
                     type: 'candlestick',    //K线图
                     data: data0.values,     //y轴对应的数据
-
+                    itemStyle: {
+                        normal: {
+                            color: 'red', // 阳线填充颜色
+                            color0: 'lightgreen', // 阴线填充颜色
+                            lineStyle: {
+                                width: 2,
+                                color: 'orange', // 阳线边框颜色
+                                color0: 'lightgreen' // 阴线边框颜色
+                            }
+                        }
+                    },
 ////////////////////////图标标注/////////////////////////////
-				markPoint: {
-					label: {
-						normal: {
-							formatter: function (param) {
-								return param.value;
+					markPoint: {
+						label: {
+							normal: {
+								formatter: function (param) {
+									return param.value;
+								}
 							}
-						}
-					},
-					data: [
-						{% for i in ori_data %}
-						{
-							name: '{{i.operation}} {{i.id}}',
-							coord: ['{{i.date|date:'Y-m-d'}}',{{i.price}}],
-							value: {{i.price}},
-							itemStyle: {
-								{% if '买入' in i.operation%}
-								normal: {color: 'rgb(128,0,0)'}
-								{% else %}
-								normal: {color: 'rgb(0,128,0)'}
-								{% endif %}
-							}
-						}{% if not forloop.last %},{% endif %}
-						{% endfor %}
-					],
-					tooltip: {
-						formatter: function (param) {
-							return param.name + '<br>' + (param.data.coord || '');
+						},
+						data: [
+							{% for i in ori_data %}
+							{
+								name: '{{i.operation}} {{i.id}}',
+								coord: ['{{i.date|date:'Y-m-d'}}',{{i.price}}],
+								value: {{i.price}},
+								itemStyle: {
+									{% if '买入' in i.operation%}
+									normal: {color: 'rgb(128,0,0)'}
+									{% else %}
+									normal: {color: 'rgb(0,128,0)'}
+									{% endif %}
+								}
+							}{% if not forloop.last %},{% endif %}
+							{% endfor %}
+						],
+						tooltip: {
 						}
 					}
-				}
-
+                },
 
 /////////////////////////////////图标标线///////////////////////////
 
-                },
+
 
                 {   //MA5 5天内的收盘价之和/5
+                    symbol: "none",
                     name: 'MA5',
                     type: 'line',
                     data: calculateMA(5),
@@ -163,6 +244,7 @@
                     }
                 },
                 {
+                    symbol: "none",
                     name: 'MA20',
                     type: 'line',
                     data: calculateMA(20),
@@ -172,12 +254,37 @@
                     }
                 },
                 {
+                    symbol: "none",
                     name: 'MA200',
                     type: 'line',
                     data: calculateMA(250),
                     smooth: true,
                     lineStyle: {
+                        type:'solid',
                         normal: {opacity: 0.5}
+                        
+                    }
+                },
+                
+                //成交量
+                {
+                    name: 'Volumn',
+                    type: 'bar',
+                    xAxisIndex: 1,
+                    yAxisIndex: 1,
+                    data: data0.volumns,
+                    itemStyle: {
+                        normal: {
+                            color: function(params) {
+                                var colorList;
+                                if (this.pct_data.pct[params.dataIndex] > 0 ) {
+                                    colorList = '#ef232a';
+                                } else {
+                                    colorList = '#14b143';
+                                }
+                                return colorList;
+                            },
+                        }
                     }
                 }
             ]

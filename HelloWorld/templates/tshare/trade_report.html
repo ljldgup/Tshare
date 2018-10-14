@@ -16,7 +16,7 @@
 				结束时间<input type="date" name="ed_date" value="{{ed_date | default_if_none:""}}">
 				<input type="submit" value="提交">
 			</form>
-			<div "float:right; width:300px; margin-left:8px">
+			<div style="float:right; width:300px; text-align:center">
 				<h2>交易统计结果</h2>
 			</div>
 		</div>
@@ -36,8 +36,8 @@
 				{% for i in stat_data %}
 					<tr>
 						<td><a href="/trade_detail/{{i.code}}/" target="_blank">{{i.name}}</a></td>
-						<td>{{i.i_date}}</td>
-						<td>{{i.o_date}}</td>
+						<td>{{i.i_date|date:'Y-m-d'}}</td>
+						<td>{{i.o_date|date:'Y-m-d'}}</td>
 						<td>{{i.i_total}}</td>
 						<td>{{i.o_total}}</td>
 						<td>{{i.time}}</td>
@@ -86,19 +86,18 @@
 					}
 					
 					t_rate = parseInt(data.t_win_num/(data.t_los_num + data.t_win_num)*1000)/10.0
-					document.write("<p>总收益：" + data.t_win_earning + "</p>");
-					document.write("<p>总亏损：" + data.t_los_earning + "</p>");
-					document.write("<p>合计：" +  (data.t_win_earning + data.t_los_earning) + "</p>");
-					document.write("<p>成功次数：" + data.t_win_num + "</p>");
-					document.write("<p>失败次数：" + data.t_los_num + "</p>");
-					document.write("<p>成功率：" + t_rate + "&#37</p>");
-					document.write("<p>盈利大于10%的次数：" + data.t_win_10_num + "</p>");
-					document.write("<p>盈利大于10%的总收益：" + data.t_win_10_earning + "</p>");
-					document.write("<p>亏损大于5%的次数：" + data.t_los_5_num + "</p>");
-					document.write("<p>亏损大于5%的总收益：" + data.t_los_5_earning + "</p>");
+					document.write("<p>&nbsp&nbsp&nbsp&nbsp总收益：" + data.t_win_earning + "</p>");
+					document.write("<p>&nbsp&nbsp&nbsp&nbsp总亏损：" + data.t_los_earning + "</p>");
+					document.write("<p>&nbsp&nbsp&nbsp&nbsp合计：" +  (data.t_win_earning + data.t_los_earning) + "</p>");
+					document.write("<p>&nbsp&nbsp&nbsp&nbsp成功次数：" + data.t_win_num + "</p>");
+					document.write("<p>&nbsp&nbsp&nbsp&nbsp失败次数：" + data.t_los_num + "</p>");
+					document.write("<p>&nbsp&nbsp&nbsp&nbsp成功率：" + t_rate + "&#37</p>");
+					document.write("<p>&nbsp&nbsp&nbsp&nbsp盈利大于10%的次数：" + data.t_win_10_num + "</p>");
+					document.write("<p>&nbsp&nbsp&nbsp&nbsp盈利大于10%的总收益：" + data.t_win_10_earning + "</p>");
+					document.write("<p>&nbsp&nbsp&nbsp&nbsp亏损大于5%的次数：" + data.t_los_5_num + "</p>");
+					document.write("<p>&nbsp&nbsp&nbsp&nbsp亏损大于5%的总收益：" + data.t_los_5_earning + "</p>");
 				</script>
 			</div>
-			
 
 		</div>
 	</body>
