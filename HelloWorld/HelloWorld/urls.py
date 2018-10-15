@@ -28,5 +28,4 @@ urlpatterns = [
 	path('new_add/<int:a>/<int:b>/', calc_views.add2, name = 'add2' ),
 	url('trade_report/', tshare_views.trade_report,name = 'trade_report'),
 	path('trade_detail/<str:r_code>/', tshare_views.trade_detail, name='trade_detail'),
-	url(r'echarts*', tshare_views.echarts, name = 'echarts')
 ]
