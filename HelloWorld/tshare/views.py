@@ -4,7 +4,7 @@ from . import dbtools
 from datetime import datetime
 # Create your views here.
 
-dbrefreshed = False
+dbrefreshed = True
 
 def trade_report(request):
 	global dbrefreshed
