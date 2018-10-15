@@ -1,5 +1,5 @@
             <!-- 为ECharts准备一个具备大小（宽高）的DOM -->
-    <div id="main" style="width: 1200px; height: 600px; float-div{ float:right};"></div>
+    <div id="main" style="width: 1000px; height: 600px; float-div{ float:right};"></div>
     <script type="text/javascript">
 
         /*基于准备好的dom，初始化echarts实例*/
@@ -54,32 +54,53 @@
             return result;
         }
         //计算涨幅等百分比数据
-        function calculatePct(dayCount) {
+        function calculatePct(type) {
             var pct = [];
-			var amp = [];
             var tmp
+			
             for (var i = 0, len = data0.values.length; i < len; i++) {
             
                 if (i < 1) {
                     pct.push('-');
-					amp.push('-');
                     //alert(result);
                     continue;   //结束单次循环，即不输出本次结果
                 }
-                tmp = ((data0.values[i][1] - data0.values[i-1][1]) / data0.values[i-1][1]*100).toFixed(2)  
+				
+				switch(type)
+					{
+						//涨幅
+						case 1:
+							tmp = ((data0.values[i][1] - data0.values[i-1][1]) / data0.values[i-1][1]*100).toFixed(2);
+							break;
+						//振幅
+						case 2:
+							tmp = ((data0.values[i][3] - data0.values[i][2]) / data0.values[i-1][1]*100).toFixed(2)  
+							break;
+
+						//最高点
+						case 3:
+							tmp = ((data0.values[i][3] - data0.values[i-1][1]) / data0.values[i-1][1]*100).toFixed(2);
+							break;
+						//最低点
+						case 4:
+							tmp = ((data0.values[i][2] - data0.values[i-1][1]) / data0.values[i-1][1]*100).toFixed(2);
+							break;
+						default:
+							tmp = '-';
+							break;
+					}
+				
                 pct.push(tmp);
-                tmp = ((data0.values[i][3] - data0.values[i][2]) / data0.values[i-1][1]*100).toFixed(2)  
-                amp.push(tmp);
                // alert(result);
             }
-            return {
-				pct:pct,
-				amp:amp
-			}
+            return pct;
         }
 
-        
-        var pct_data = calculatePct(data0.values);
+        //四种涨幅
+        var pct_data1 = calculatePct(1);
+		var pct_data2 = calculatePct(2);
+		var pct_data3 = calculatePct(3);
+		var pct_data4 = calculatePct(4);
         
         option = {
             title: {    //标题
@@ -105,16 +126,27 @@
                         //引入成交量后，两个图显示不一致，所以使用全局变量
                         tmp += '开盘: ' + this.data0.values[param.dataIndex][0] + '<br/>'
                         tmp += '收盘: ' + this.data0.values[param.dataIndex][1] + '<br/>'
-                        tmp += '最低: ' + this.data0.values[param.dataIndex][2] + '<br/>'
-                        tmp += '最高: ' + this.data0.values[param.dataIndex][3] + '<br/>'
+
                         //这个函数是在外部调用的所以要写option
-                        if (this.pct_data.pct[param.dataIndex] > 0 ) {
-                                tmp += '涨幅: <span style="color:red">' + this.pct_data.pct[param.dataIndex] + '&#37;</span><br/>'; 
+                        if (this.pct_data1[param.dataIndex] > 0 ) {
+                                tmp += '涨幅: <span style="color:red">' + this.pct_data1[param.dataIndex] + '&#37;</span><br/>'; 
                               } else {
-                                tmp += '涨幅: <span style="color:green">' + this.pct_data.pct[param.dataIndex] + '&#37;</span><br/>';
+                                tmp += '涨幅: <span style="color:green">' + this.pct_data1[param.dataIndex] + '&#37;</span><br/>';
                         };
 						tmp +='<hr size=1 style="margin: 3px 0">'
-                        tmp += '振幅: ' + this.pct_data.amp[param.dataIndex] + '&#37;<br/>';
+                        tmp += '振幅: ' + this.pct_data2[param.dataIndex] + '&#37;<br/>';
+						
+						if (this.pct_data3[param.dataIndex] > 0 ) {
+                                tmp += '最高: <span style="color:red">' + this.pct_data3[param.dataIndex] + '&#37;</span><br/>'; 
+                              } else {
+                                tmp += '最高: <span style="color:green">' + this.pct_data3[param.dataIndex] + '&#37;</span><br/>';
+                        };
+						
+                        if (this.pct_data4[param.dataIndex] > 0 ) {
+                                tmp += '最低: <span style="color:red">' + this.pct_data4[param.dataIndex] + '&#37;</span><br/>'; 
+                              } else {
+                                tmp += '最低: <span style="color:green">' + this.pct_data4[param.dataIndex] + '&#37;</span><br/>';
+                        };
                         //个人持仓量
                         tmp +='<hr size=1 style="margin: 3px 0">'
                         tmp += '持仓手数: ' + '' + '<br/>'
@@ -129,13 +161,13 @@
             },
 			grid: [
 				{
-					left: '10%',
-					right: '8%',
+					left: '4%',
+					right: '0%',
 					height: '60%'
 				},
 				{
-					left: '10%',
-					right: '8%',
+					left: '4%',
+					right: '0%',
 					bottom: '15%',
 					height: '8%'
 				}
@@ -277,7 +309,7 @@
                         normal: {
                             color: function(params) {
                                 var colorList;
-                                if (this.pct_data.pct[params.dataIndex] > 0 ) {
+                                if (this.pct_data1[params.dataIndex] > 0 ) {
                                     colorList = '#ef232a';
                                 } else {
                                     colorList = '#14b143';

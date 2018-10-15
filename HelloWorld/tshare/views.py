@@ -4,7 +4,7 @@ from . import dbtools
 from datetime import datetime
 # Create your views here.
 
-dbrefreshed = True
+dbrefreshed = False
 
 def trade_report(request):
 	global dbrefreshed
@@ -64,6 +64,3 @@ def trade_detail(request,r_code):
 	data['k_data'] = k_data
 	data['r_name'] = ori_data[1].name
 	return render(request, 'tshare/trade_detail.html',data)
-	
-def echarts(request):
-	return render(request, 'tshare/echarts.min.js')
