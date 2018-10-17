@@ -42,7 +42,7 @@ def storekdata(code,my_conn = yconnect):
     data = pd.read_sql_query('select * from k_bfq where code = ' + code + ';', con = my_conn)
 	
     if (len(data) == 0):
-        data1 = ts.get_k_data(code, ktype='D', autype=None ,index=False,start='2015-07-06', end='2018-09-28')
+        data1 = ts.get_k_data(code, ktype='D', autype=None ,index=False,start='2015-07-06', end=time.strftime('%Y-%m-%d',time.localtime(time.time())))
         data1['id'] = data1.index - data1.index.min()
         data1.to_sql('k_bfq', con=my_conn, if_exists='append')
         time.sleep(0.1)

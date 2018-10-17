@@ -12,6 +12,13 @@
             ['{{i.date}}',{{i.open}},{{i.close}},{{i.low}},{{i.high}},{{i.volume}}]{% if not forloop.last %},{% endif %}
             {% endfor %}
         ]
+		
+		detailData = [
+        //日期上的双引号 不能删，不然会变成年丰
+            {% for i in ori_data %}
+            ['{{i.date|date:'Y-m-d'}}','{{i.operation}}',{{i.amount}},{{i.price}},{{i.sum}},{{i.getamount}},{{i.getsum|default_if_none:"'-'" }}]{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ]
         
 
         //切割数组，把数组中的日期和数据分离，返回数组中的日期和数据
@@ -102,6 +109,59 @@
 		var pct_data3 = calculatePct(3);
 		var pct_data4 = calculatePct(4);
         
+		//计算手数，成本
+		function calculateAmountCost(data) {
+			var amount = [];
+			var cost = [];
+			var range = [];
+			var t_amount;
+			var t_cost;
+			var len1 = this.data0.categoryData.length;
+			var len2 = data.length
+			for (var i = 0, k = 0; i < len1 ; i++) {
+				if(k >= len2){
+					if(t_amount == 0 ) t_cost = 0;
+					amount.push(t_amount);
+					cost.push(t_cost);
+					continue;
+				}
+				//console.log(k + ':' + data0.categoryData[i] + ":" + data[k][0]);
+				if (data0.categoryData[i] == data[k][0]) {
+					range.push(i);
+					if(i == 0){
+						t_amount = data[k][2]
+						t_cost = -data[k][2]*data[k][3]
+					}else{
+						t_amount = data[k][2] + amount[i-1];
+						//成本买入为负，卖出为正
+						t_cost = cost[i-1] - data[k][2]*data[k][3];
+					}
+					amount.push(t_amount);
+					cost.push(t_cost);
+					k++;
+				}else{
+					if(i == 0){
+						t_amount=0;
+						t_cost=0;
+					}
+					if(t_amount == 0 ) t_cost = 0;
+					amount.push(t_amount);
+					cost.push(t_cost);
+				}
+				
+			   // alert(result);
+			}
+			return {
+				amount: amount,
+				cost: cost,
+				range: range
+			};
+		}
+
+		data1 = calculateAmountCost(detailData);
+		st_pos = parseInt((data1.range[0]/rData.length*100).toFixed(0));
+		ed_pos = parseInt(((data1.range[data1.range.length - 1]-1)/rData.length*100).toFixed(0))+1;
+		
         option = {
             title: {    //标题
                 text: '{{r_name}}',
@@ -148,11 +208,30 @@
                                 tmp += '最低: <span style="color:green">' + this.pct_data4[param.dataIndex] + '&#37;</span><br/>';
                         };
                         //个人持仓量
-                        tmp +='<hr size=1 style="margin: 3px 0">'
-                        tmp += '持仓手数: ' + '' + '<br/>'
-                        tmp += '持仓金额: ' + '' + '<br/>'
-                        tmp += '盈亏金额: ' + '' + '<br/>'
-                        tmp += '盈亏金额: ' + '' + '<br/>'
+
+                        if(param.dataIndex!=0 && this.data1.amount[param.dataIndex] == 0 && this.data1.amount[param.dataIndex-1] != 0){
+							tmp +='<hr size=1 style="margin: 3px 0">'
+							tmp += '持仓手数: ' + this.data1.amount[param.dataIndex] + '<br/>';
+							tmp += '持仓金额: ' + (this.data1.amount[param.dataIndex]*this.data0.values[param.dataIndex][1]).toFixed(0)  + '<br/>';
+							var earning = this.data1.amount[param.dataIndex]*this.data0.values[param.dataIndex][1] + this.data1.cost[param.dataIndex];
+							if(earning > 0 ){
+								tmp += '盈亏金额: <span style="color:red">' + (this.data1.amount[param.dataIndex]*this.data0.values[param.dataIndex][1] + this.data1.cost[param.dataIndex]).toFixed(0) + '</span><br/>';
+								tmp += '盈亏比例: <span style="color:green">' + ((this.data1.amount[param.dataIndex]*this.data0.values[param.dataIndex][1] + this.data1.cost[param.dataIndex])/(this.data1.amount[param.dataIndex-1]*this.data0.values[param.dataIndex][1])).toFixed(4)*100 + '&#37;</span><br/>';
+							}else{
+								tmp += '盈亏金额: <span style="color:green">' + (this.data1.amount[param.dataIndex]*this.data0.values[param.dataIndex][1] + this.data1.cost[param.dataIndex]).toFixed(0) + '</span><br/>';
+								tmp += '盈亏比例: <span style="color:green">' + ((this.data1.amount[param.dataIndex]*this.data0.values[param.dataIndex][1] + this.data1.cost[param.dataIndex])/(this.data1.amount[param.dataIndex-1]*this.data0.values[param.dataIndex][1])).toFixed(4)*100 + '&#37;</span><br/>';
+							}
+						}
+						else if(this.data1.amount[param.dataIndex] != 0){
+						    tmp +='<hr size=1 style="margin: 3px 0">'
+							tmp += '持仓手数: ' + this.data1.amount[param.dataIndex] + '<br/>';
+							tmp += '持仓金额: ' + (this.data1.amount[param.dataIndex]*this.data0.values[param.dataIndex][1]).toFixed(0)  + '<br/>';
+							tmp += '盈亏金额: ' + (this.data1.amount[param.dataIndex]*this.data0.values[param.dataIndex][1] + this.data1.cost[param.dataIndex]).toFixed(0) + '<br/>';
+							tmp += '盈亏比例: ' + parseInt((this.data1.amount[param.dataIndex]*this.data0.values[param.dataIndex][1] + this.data1.cost[param.dataIndex])/(this.data1.amount[param.dataIndex]*this.data0.values[param.dataIndex][1])*10000)/100 + '&#37;<br/>';
+						}else{
+						tmp +='<hr size=1 style="margin: 3px 0">'
+						tmp += '持仓手数: ' + 0 + '<br/>';
+						}
                         return tmp;
                     }
             },
@@ -203,16 +282,16 @@
 					//k线图 和成交量同时缩放
 					xAxisIndex: [0, 1],
 					//初始位置
-					start: 98,
-					end: 100
+					start: st_pos,
+					end: ed_pos
 				},
 				{
 					show: true,
 					xAxisIndex: [0, 1],
 					type: 'slider',
 					top: '85%',
-					start: 98,
-					end: 100
+					start: st_pos,
+					end: ed_pos
 				}
 			],
             series: [   //图表类型

@@ -20,7 +20,7 @@ def trade_report(request):
 	r_name =None
 	stat_data = tmd.StatisticTradeData.objects.all().order_by('o_date')
 	
-	#时间大于等于st_date
+	#买入时间大于等于st_date
 	try:
 		st_date = request.GET['st_date']
 		if st_date != "":
@@ -28,12 +28,13 @@ def trade_report(request):
 			stat_data = stat_data.filter(i_date__gte = st_date_dtm)
 	except BaseException as e:
 		print(e)
-		
+	
+	#卖出时间小于等于ed_date	
 	try:
 		ed_date = request.GET['ed_date']
 		if ed_date != "":
 			ed_date_dtm = datetime.strptime(ed_date, "%Y-%m-%d") 
-			stat_data = stat_data.filter(i_date__lte = ed_date_dtm)
+			stat_data = stat_data.filter(o_date__lte = ed_date_dtm)
 	except BaseException as e:
 		print(e)
 		
@@ -58,6 +59,22 @@ def trade_detail(request,r_code):
 	#store_k_data to tmp table
 	dbtools.storekdata(r_code)
 	
+	try:
+		st_date = request.GET['st_date']
+		if st_date != "":
+			st_date_dtm = datetime.strptime(st_date, "%Y-%m-%d")
+			ori_data = ori_data.filter(date__gte = st_date_dtm)
+	except BaseException as e:
+		print(e)
+		
+	try:
+		ed_date = request.GET['ed_date']
+		if ed_date != "":
+			ed_date_dtm = datetime.strptime(ed_date, "%Y-%m-%d") 
+			ori_data = ori_data.filter(date__lte = ed_date_dtm)
+	except BaseException as e:
+		print(e)
+		
 	data = {}
 	data['ori_data'] = ori_data;
 	data['r_code'] = r_code
