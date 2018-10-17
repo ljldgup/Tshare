@@ -45,6 +45,7 @@ def get_trade(data):
                 getsum = 0
                 
             #新的交易
+            if i<
             if t_count == 0:
                 index += 1
                 trade_data.at[index,"name"] = name
