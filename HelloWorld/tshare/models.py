@@ -57,5 +57,9 @@ class K_days(models.Model):
         managed = False
         db_table = 'k_bfq'
 		
+class Note(models.Model):
+    date = models.TextField(blank=True, null=True)
+    date = models.TextField(blank=True, null=True)
+    context = models.TextField(blank=True, null=True)
 	
 	

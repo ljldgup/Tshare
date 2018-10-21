@@ -30,16 +30,13 @@
 		<div style="width: 950px; float: left;">
 		
 			<script>
-				function getDate(obj)
+				function getDate(obj,st_data,ed_date)
 				{
-					var url = self.location.href;
-					var url_param = url.split('?')[1];
-					url_param = url_param.split('&');
-					var params = '?' + url_param[1] + '&' + url_param[2];
+					var params = '?' + st_data + '&' + ed_date;
 					obj.href += params;
 				}
 			</script>
-			<table id="stat_data" border="1">
+			<table id="stat_table" border="1">
 
 				<thead>
 					<tr>
@@ -47,83 +44,138 @@
 						<th>最初买入日期</th>
 						<th>最终卖出日期</th>
 						<th>总买入金额</th>
-						<th>总卖出金额</th>
 						<th>总持股时间</th>
 						<th>盈亏金额</th>
 						<th>盈亏百分比</th>
 					</tr>
 				</thead>
 
-				<tbody>
-					{% for i in stat_data %}
-					<tr>
-						<td><a href="/trade_detail/{{i.code}}/" onclick="getDate(this)" target="_blank">{{i.name}}</a></td>
-						<td>{{i.i_date|date:'Y-m-d'}}</td>
-						<td>{{i.o_date|date:'Y-m-d'}}</td>
-						<td>{{i.i_total}}</td>
-						<td>{{i.o_total}}</td>
-						<td>{{i.time}}</td> {% if i.earning >= 0 %}
-						<td style="color: red">{{i.earning}}</td>
-						<td style="color: red">{{i.pct}}</td> {% else %}
-						<td style="color: green">{{i.earning}}</td>
-						<td style="color: green">{{i.pct}}</td> {% endif %}
-
-					</tr>
-					{% endfor %}
+				<tbody id = "stat_bady">
 				</tbody>
 			</table>
+			
 			<script>
+				$.ajaxSetup({async:false});
 				$(document).ready( function () {
-					$('#stat_data').DataTable();
-				} );
-			</script>
-		</div>
-		<div style="float: right; width: 300px; margin-left: 8px"
-			id="stat_res">
-			<h3>结果统计</h3>
-			<script type="text/javascript">
-				/** 
-				 * 遍历表格内容进行统计
-				 */
-					var mytable = document.getElementById("stat_data");
-					var data = {t_win_earning:0, t_los_earning:0, t_win_num:0, t_los_num:0, t_win_10_num:0, t_los_5_num:0, t_win_10_earning:0, t_los_5_earning:0};
-					var tmp = 0;
-					var pct = 0;
+					var stat_data;
+					//使用json初始化
+					$.getJSON("/trade_data_json/", function(data){
+						stat_data = data;
+					})
+					stat_table = $('#stat_table').DataTable({
+						//搜索后重新统计
+						"fnFooterCallback": function(nFoot, aData, iStart, iEnd, aiDisplay) {
+							statistic(aData,aiDisplay);
+						},
+						
+						//盈利颜色设置
+						"columnDefs": [
+							{
+								"targets": 0,
+								"createdCell": function (td, cellData, rowData, row, col) {
+									$(td).css('width', '70px');
+									$(td).html("<a href=\"/trade_detail/" + stat_data[row][0] + "\" onclick = getDate(this,\"" + String(stat_data[row][2]) + "\",\"" + String(stat_data[row][3]) + "\") target=\"_blank\">" + stat_data[row][1] + "</a>");
+									console.log(row);
+								}
+							},
+							{
+								"targets": 5,
+								"createdCell": function (td, cellData, rowData, row, col) {
+									if ( cellData > 0 ) {
+										$(td).css('color', 'red')
+									}else{
+										$(td).css('color', 'green')
+									}
+								}
+							},
+							{
+								"targets": 6,
+								"createdCell": function (td, cellData, rowData, row, col) {
+									if ( cellData > 0 ) {
+										$(td).css('color', 'red')
+									}else{
+										$(td).css('color', 'green')
+									}
+								}
+							}
+						]
+					});
 					
-					for(var i=1, rows=mytable.rows.length; i<rows; i++){
-					  tmp = parseFloat(mytable.rows[i].cells[6].innerHTML);
-					  pct = parseFloat(mytable.rows[i].cells[7].innerHTML);
-					  if(tmp > 0){
-						data.t_win_earning += tmp;
-						data.t_win_num += 1;
-						if(pct > 10){
-							data.t_win_10_earning += tmp;
-							data.t_win_10_num += 1;
+
+					init_table(stat_table,stat_data);
+					
+				});
+				
+
+				function init_table(stat_table,ini_data){
+					for(var i = 0; i < ini_data.length;i++){
+						if( i == ini_data.length - 1){
+							stat_table.row.add(ini_data[i].slice(1,8)).draw( true );
+						}else{
+							stat_table.row.add(ini_data[i].slice(1,8));
 						}
-					  }
-					  else{
-						data.t_los_earning += tmp;
-						data.t_los_num += 1;
-						if(pct < -5){
-							data.t_los_5_earning += tmp;
-							data.t_los_5_num += 1;
+					}
+					
+				}
+				
+				function statistic(aData,aiDisplay){
+					/** 
+					 * 遍历表格内容进行统计
+					 */
+					var data = {t_win_earning:0, t_los_earning:0, t_win_num:0, t_los_num:0, t_win_10_num:0, t_los_5_num:0, t_win_10_earning:0, t_los_5_earning:0,t_time:0};
+					var tmp = 0;
+					var time = 0;
+					
+					if( aiDisplay.length > 0){
+						for(var i = 0, rows = aiDisplay.length; i < rows; i++){
+							time = parseFloat(aData[aiDisplay[i]][4]);
+							tmp = parseFloat(aData[aiDisplay[i]][5]);
+							pct = parseFloat(aData[aiDisplay[i]][6]);
+							data.t_time += time;
+							if(tmp > 0){
+								data.t_win_earning += tmp;
+								data.t_win_num += 1;
+								if(pct > 10){
+									data.t_win_10_earning += tmp;
+									data.t_win_10_num += 1;
+								}
+							}
+						
+							else{
+								data.t_los_earning += tmp;
+								data.t_los_num += 1;
+								if(pct < -5){
+									data.t_los_5_earning += tmp;
+									data.t_los_5_num += 1;
+								}
+							}
 						}
-					  }
 					}
 					
 					t_rate = parseInt(data.t_win_num/(data.t_los_num + data.t_win_num)*1000)/10.0
-					document.write("<p>总收益：" + data.t_win_earning + "</p>");
-					document.write("<p>总亏损：" + data.t_los_earning + "</p>");
-					document.write("<p>合计：" +  (data.t_win_earning + data.t_los_earning) + "</p>");
-					document.write("<p>成功次数：" + data.t_win_num + "</p>");
-					document.write("<p>失败次数：" + data.t_los_num + "</p>");
-					document.write("<p>成功率：" + t_rate + "&#37</p>");
-					document.write("<p>盈利大于10%的次数：" + data.t_win_10_num + "</p>");
-					document.write("<p>盈利大于10%的总收益：" + data.t_win_10_earning + "</p>");
-					document.write("<p>亏损大于5%的次数：" + data.t_los_5_num + "</p>");
-					document.write("<p>亏损大于5%的总收益：" + data.t_los_5_earning + "</p>");
-				</script>
+					t_avg_time = parseInt(data.t_time/(data.t_los_num + data.t_win_num))
+					
+					var txt= "<h3>结果统计</h3>";
+					txt += "<p>总收益：" + data.t_win_earning + "</p>";
+					txt += "<p>总亏损：" + data.t_los_earning + "</p>";
+					txt += "<p>合计：" +  (data.t_win_earning + data.t_los_earning) + "</p>";
+					txt += "<p>成功次数：" + data.t_win_num + "</p>";
+					txt += "<p>失败次数：" + data.t_los_num + "</p>";
+					txt += "<p>成功率：" + t_rate + "&#37</p>";
+					txt += "<p>平均持股时间：" + t_avg_time + "</p>";
+					txt += "<p>盈利大于10%的次数：" + data.t_win_10_num + "</p>";
+					txt += "<p>盈利大于10%的总收益：" + data.t_win_10_earning + "</p>";
+					txt += "<p>亏损大于5%的次数：" + data.t_los_5_num + "</p>";
+					txt += "<p>亏损大于5%的总收益：" + data.t_los_5_earning + "</p>";
+					$("#stat_res").html(txt);
+				}
+				
+			</script>
 
+		</div>
+		<div style="float: right; width: 300px; margin-left: 8px"
+			id="stat_res">
+			
 		</div>
 </body>
 
