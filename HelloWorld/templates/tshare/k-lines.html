@@ -1,5 +1,5 @@
             <!-- 为ECharts准备一个具备大小（宽高）的DOM -->
-    <div id="main" style="width: 1000px; height: 600px; float-div{ float:right};"></div>
+    <div id="main" style="width: 900px; height: 600px; float-div{ float:right};"></div>
     <script type="text/javascript">
 
         /*基于准备好的dom，初始化echarts实例*/
@@ -199,7 +199,7 @@
 
 		data1 = calculateAmountCost(detailData);
 		st_pos = parseFloat((data1.range[0]/rData.length*100).toFixed(0)) - 0.4;
-		ed_pos = parseFloat(((data1.range[1]-1)/rData.length*100).toFixed(0)) + 0.5;
+		ed_pos = parseFloat(((data1.range[1]-1)/rData.length*100).toFixed(0)) + 0.6;
 		
         option = {
             title: {    //标题

@@ -58,8 +58,14 @@ class K_days(models.Model):
         db_table = 'k_bfq'
 		
 class Note(models.Model):
-    date = models.TextField(blank=True, null=True)
-    date = models.TextField(blank=True, null=True)
-    context = models.TextField(blank=True, null=True)
+    id = models.BigIntegerField(primary_key=True)
+    t_date = models.TextField(blank=True, null=True)
+    t_code = models.TextField(blank=True, null=True)
+    t_type = models.TextField(blank=True, null=True)
+    t_content = models.TextField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'note'
 	
 	

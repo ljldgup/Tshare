@@ -2,7 +2,7 @@ from django.shortcuts import render
 from . import models as tmd
 from . import dbtools
 from datetime import datetime
-from django.http import JsonResponse
+from django.http import JsonResponse,HttpResponse
 # Create your views here.
 
 dbrefreshed = False
@@ -59,8 +59,8 @@ def trade_detail(request,r_code):
 	dbtools.storekdata(r_code)
 	ori_data = tmd.OriginalTradeData.objects.filter(code = r_code)
 	k_data = tmd.K_days.objects.filter(code = r_code)
-
-	
+	note = tmd.Note.objects.filter(t_code = r_code)
+	note = note.filter(t_type = "operation")
 	try:
 		st_date = request.GET['st_date']
 		if st_date != "":
@@ -82,7 +82,19 @@ def trade_detail(request,r_code):
 	data['r_code'] = r_code
 	data['k_data'] = k_data
 	data['r_name'] = ori_data[1].name
+	data['note'] = note
 	return render(request, 'tshare/trade_detail.html',data)
+
+def add_note(request):
+	w_date = request.GET['w_date']
+	r_code = request.GET['r_code']
+	r_type = request.GET['r_type']
+	r_content = request.GET['r_content']
+	r_content.replace('\n', "<br>");
+	r_content.replace(' ', "&nbsp");
+	tmd.Note.objects.create(t_date = w_date,t_code = r_code,t_type = r_type, t_content = r_content);
+	return HttpResponse("ok")
+
 	
 def k_data_json(request,r_code):
 

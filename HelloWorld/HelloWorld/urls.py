@@ -29,5 +29,6 @@ urlpatterns = [
 	url('trade_report/', tshare_views.trade_report,name = 'trade_report'),
 	path('trade_detail/<str:r_code>/', tshare_views.trade_detail, name='trade_detail'),
 	path('k_data_json/<str:r_code>/', tshare_views.k_data_json, name='k_data_json'),
-	path('trade_data_json/', tshare_views.trade_data_json, name='trade_data_json')
+	path('trade_data_json/', tshare_views.trade_data_json, name='trade_data_json'),
+	path('add_note/', tshare_views.add_note, name='add_note')
 ]
