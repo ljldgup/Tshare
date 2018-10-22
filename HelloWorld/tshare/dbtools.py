@@ -17,9 +17,14 @@ sys.path.append("..")
 from HelloWorld import settings
 
 #url = 'mysql+pymysql://ljl:123123@localhost:3306/django_test?charset=utf8'
-url= 'sqlite:///'+settings.DATABASES['default']['NAME']
-yconnect = create_engine(url)
+#url= 'sqlite:///'+settings.DATABASES['default']['NAME']
 
+
+if('sqlite' in settings.DATABASES['default']['ENGINE']):
+	url= 'sqlite:///'+settings.DATABASES['default']['NAME']
+else:
+	url = 'mysql+pymysql://ljl:123123@localhost:3306/django_test?charset=utf8'
+yconnect = create_engine(url)
 
 #delete k data
 def user_proxy(proxy_addr):
