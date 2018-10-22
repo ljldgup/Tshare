@@ -366,7 +366,7 @@
 							{
 								name: '{{i.operation}} {{i.id}}',
 								coord: ['{{i.date|date:'Y-m-d'}}',{{i.price}}],
-								value: {{i.price}},
+								value: {{i.amount}},
 								itemStyle: {
 									{% if '买入' in i.operation%}
 									normal: {color: 'rgb(128,0,0)'}
