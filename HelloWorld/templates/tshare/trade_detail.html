@@ -49,10 +49,10 @@
 			<script>
 					$(document).ready( function () {
 						$('#detail_data').DataTable();
-						var mydateInput = $('#w_date')
 						var date = new Date();
 						var dateString = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
-						mydateInput.val(dateString);
+						$('#w_date').val(dateString);
+						$('#r_url').val(self.location.href);
 					});
 			</script>
 		</div>
@@ -65,9 +65,10 @@
 			</div>
 			{% endfor %}
 			<form action="/add_note/" method="get" style="float: left; width: 300px;" id="write_note">
-				时间<input type="date" id="w_date" name="w_date" value=""/>
+				时间<input type="date" name="w_date" value=""  id="w_date"/>
 					<input type="hidden" value="{{r_code}}" name="r_code"/>
 					<input type="hidden" value="operation" name="r_type"/>
+					<input type="hidden" value="" name="r_url" id = "r_url"/>
 					<br><br>
 				<textarea rows="10" cols="50" name="r_content" wrap="hard" form="write_note">。。。</textarea>
 					<br>

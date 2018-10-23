@@ -2,7 +2,7 @@ from django.shortcuts import render
 from . import models as tmd
 from . import dbtools
 from datetime import datetime
-from django.http import JsonResponse,HttpResponse
+from django.http import JsonResponse,HttpResponse,HttpResponseRedirect
 # Create your views here.
 
 dbrefreshed = False
@@ -12,15 +12,21 @@ def trade_report(request):
 	if dbrefreshed == False:
 		dbtools.refresh_k_data('k_bfq',)
 		dbrefreshed = True
-
-	st_date = request.GET['st_date']
-	ed_date = request.GET['ed_date']
 	
 	data = {}
+	try:
+		st_date = request.GET['st_date']
+		ed_date = request.GET['ed_date']
+		r_name = request.GET['r_name']
+		data['st_date'] = st_date
+		data['ed_date'] = ed_date
+		data['r_name'] = r_name
+	except BaseException as e:
+		print(e)
+	
 
 	#保存页面数据
-	data['st_date'] = st_date
-	data['ed_date'] = ed_date
+
 	return render(request, 'tshare/trade_report.html',data)
 	
 def trade_detail(request,r_code):
@@ -59,11 +65,15 @@ def add_note(request):
 	w_date = request.GET['w_date']
 	r_code = request.GET['r_code']
 	r_type = request.GET['r_type']
+	r_url = request.GET['r_url']
+
 	r_content = request.GET['r_content']
+	#r_content 是string，但替换没有任何效果。
 	r_content.replace('\n', "<br>");
 	r_content.replace(' ', "&nbsp");
-	tmd.Note.objects.create(t_date = w_date,t_code = r_code,t_type = r_type, t_content = r_content);
-	return HttpResponse("ok")
+	tmd.Note.objects.create(t_date = w_date,t_code = r_code,t_type = r_type, t_content = r_content)
+	
+	return HttpResponseRedirect(r_url)
 
 	
 def k_data_json(request,r_code):
@@ -98,6 +108,14 @@ def trade_data_json(request):
 			ed_date_dtm = datetime.strptime(ed_date, "%Y-%m-%d") 
 			stat_data = stat_data.filter(o_date__lte = ed_date_dtm)
 	except BaseException as e:
+		print(e)
+	
+	try:
+		r_name = request.GET['r_name']
+		if r_name != "":
+			stat_data = stat_data.filter(name = r_name)
+	except BaseException as e:
+		print("r_name:")
 		print(e)
 		
 	stat_list = []
