@@ -45,7 +45,6 @@ def get_trade(data):
                 getsum = 0
                 
             #新的交易
-            if i<
             if t_count == 0:
                 index += 1
                 trade_data.at[index,"name"] = name
@@ -117,8 +116,8 @@ def analysis2(trade_data):
 
     index = 0
 
-    #st_data.plot(x = "pct",y = "count",kind = "bar",figsize=(16,12))
-    #st_data.plot(x = "pct",y = "earning",kind = "bar",figsize=(16,12))
+    st_data.plot(x = "pct",y = "count",kind = "bar",figsize=(16,12))
+    st_data.plot(x = "pct",y = "earning",kind = "bar",figsize=(16,12))
     return st_data
 
 
@@ -146,7 +145,7 @@ def analysis3(trade_data):
         tmp = ntmp
         index += 1
 
-    #st_data1.plot(x = "date",y = "count",kind = "bar",figsize=(16,12))
+    st_data1.plot(x = "date",y = "count",kind = "bar",figsize=(16,12))
     return st_data1
 
     tmax=trade_data.o_date.max()
@@ -169,7 +168,7 @@ def analysis3(trade_data):
         st_data2.at[index,'win_rate'] = t[t.earning > 0].count()/t.count()
         tmp = ntmp
         index += 1
-    #st_data2.plot(x = "date",y = "count", kind = "bar",figsize=(16,12))
+    st_data2.plot(x = "date",y = "count", kind = "bar",figsize=(16,12))
     return st_data2
 
 if __name__ == '__main__':
