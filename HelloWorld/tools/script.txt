@@ -3,6 +3,7 @@ alter table statistic_trade_data ADD PRIMARY KEY('index')
 create table note(
 	id bigint,
 	t_date text,
+	t_name text,
 	t_code text,
 	t_type text,
 	t_content text

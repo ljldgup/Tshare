@@ -7,6 +7,15 @@ Created on Sun Aug  5 00:18:51 2018
 import pandas as pd
 from sqlalchemy import create_engine
 import dbtest
+import os
+
+def use_proxy():
+    HTTP_PROXY = "http_proxy"
+    HTTPS_PROXY = "https_proxy"
+    os.environ[HTTP_PROXY] = "cn-proxy.jp.oracle.com:80"
+    os.environ[HTTPS_PROXY] = "cn-proxy.jp.oracle.com:80"
+    print (os.environ["http_proxy"])
+    print (os.environ["https_proxy"])
 
 def kp2dig(number):
     #范围两位小数百分比
@@ -38,12 +47,12 @@ def get_trade(data):
                 getsum += int(data.at[i,'sum'])
             getamount += int(data.at[i,'amount'])
             data.at[i,'getamount'] = getamount
-            
+
             #手数为0后持仓就是亏损
             if getamount == 0:
                 data.at[i,'getsum'] = -getsum
                 getsum = 0
-                
+
             #新的交易
             if t_count == 0:
                 index += 1
@@ -116,8 +125,8 @@ def analysis2(trade_data):
 
     index = 0
 
-    st_data.plot(x = "pct",y = "count",kind = "bar",figsize=(16,12))
-    st_data.plot(x = "pct",y = "earning",kind = "bar",figsize=(16,12))
+    #st_data.plot(x = "pct",y = "count",kind = "bar",figsize=(16,12))
+    #st_data.plot(x = "pct",y = "earning",kind = "bar",figsize=(16,12))
     return st_data
 
 
@@ -145,7 +154,7 @@ def analysis3(trade_data):
         tmp = ntmp
         index += 1
 
-    st_data1.plot(x = "date",y = "count",kind = "bar",figsize=(16,12))
+    #st_data1.plot(x = "date",y = "count",kind = "bar",figsize=(16,12))
     return st_data1
 
     tmax=trade_data.o_date.max()
@@ -168,11 +177,11 @@ def analysis3(trade_data):
         st_data2.at[index,'win_rate'] = t[t.earning > 0].count()/t.count()
         tmp = ntmp
         index += 1
-    st_data2.plot(x = "date",y = "count", kind = "bar",figsize=(16,12))
+    #st_data2.plot(x = "date",y = "count", kind = "bar",figsize=(16,12))
     return st_data2
 
 if __name__ == '__main__':
-
+    use_proxy()
     df = pd.read_excel("data.xlsx")
 
     df = df.query('operation == \'证券买入\' or operation == \'证券卖出\'')
@@ -194,21 +203,22 @@ if __name__ == '__main__':
     t_data = get_trade(df)
 
     t_data1 = analysis_pre(t_data)
-    
+
     analysis1(t_data1)
 
     t_data2 = analysis2(t_data1)
 
     t_data3 = analysis3(t_data1)
-    
-    yconnect = create_engine('mysql+pymysql://ljl:123123@localhost:3306/django_test?charset=utf8')
-    
+
+    #yconnect = create_engine('mysql+pymysql://ljl:123123@localhost:3306/django_test?charset=utf8')
+    yconnect = create_engine('sqlite:///db.sqlite3')
+
     t_data1['id']= t_data1.index -3
     t_data1.to_sql("statistic_trade_data",con=yconnect,if_exists='replace')
-    
+
     df['id']=  df.index
     df.to_sql("original_trade_data",con=yconnect,if_exists='replace')
-    
+
     #for code in df.code.drop_duplicates():
-        #dbtest.storekdata(code)
+        #dbtest.storekdata(code,yconnect)
 

@@ -35,13 +35,9 @@ class OriginalTradeData(models.Model):
     class Meta:
         managed = False
         db_table = 'original_trade_data'
-		
-# from tshare.models import KQfq002242 as kdate
-# kdata._meta.db_table= 。。。。。 在外部修改数据库
-		
 
-		
-		
+
+
 class K_days(models.Model):
     index = models.BigIntegerField(blank=True, null=True)
     date = models.TextField(blank=True, null=True)
@@ -60,6 +56,7 @@ class K_days(models.Model):
 class Note(models.Model):
     id = models.BigIntegerField(primary_key=True)
     t_date = models.TextField(blank=True, null=True)
+    t_name = models.TextField(blank=True, null=True)
     t_code = models.TextField(blank=True, null=True)
     t_type = models.TextField(blank=True, null=True)
     t_content = models.TextField(blank=True, null=True)
@@ -67,5 +64,3 @@ class Note(models.Model):
     class Meta:
         managed = False
         db_table = 'note'
-	
-	

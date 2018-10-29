@@ -61,8 +61,15 @@ def trade_detail(request,r_code):
 	data['note'] = note
 	return render(request, 'tshare/trade_detail.html',data)
 
+def all_note(request):
+	data = {}
+	note = tmd.Note.objects.all()
+	data['note'] = note
+	return render(request, 'tshare/all_note.html',data)
+		
 def add_note(request):
-	w_date = request.GET['w_date']
+	r_date = request.GET['r_date']
+	r_name = request.GET['r_name']
 	r_code = request.GET['r_code']
 	r_type = request.GET['r_type']
 	r_url = request.GET['r_url']
@@ -71,7 +78,7 @@ def add_note(request):
 	#r_content 是string，但替换没有任何效果。
 	r_content.replace('\n', "<br>");
 	r_content.replace(' ', "&nbsp");
-	tmd.Note.objects.create(t_date = w_date,t_code = r_code,t_type = r_type, t_content = r_content)
+	tmd.Note.objects.create(t_date = r_date,t_name = r_name,t_code = r_code,t_type = r_type, t_content = r_content)
 	
 	return HttpResponseRedirect(r_url)
 
