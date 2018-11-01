@@ -25,6 +25,7 @@
 						</thead>
 
 						<tbody>
+						{% autoescape off %}
 							{% for i in note %}
 							<tr>
 								<td>{{i.t_date}}</td>
@@ -35,6 +36,7 @@
 								<td>{{i.t_content}}</td>
 							</tr>
 							{% endfor %}
+						{% endautoescape %}
 						</tbody>
 					</table>
 				</div>

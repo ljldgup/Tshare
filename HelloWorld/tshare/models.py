@@ -55,6 +55,7 @@ class K_days(models.Model):
 		
 class Note(models.Model):
     id = models.BigIntegerField(primary_key=True)
+    t_stamp = models.FloatField(blank=True, null=True)
     t_date = models.TextField(blank=True, null=True)
     t_name = models.TextField(blank=True, null=True)
     t_code = models.TextField(blank=True, null=True)

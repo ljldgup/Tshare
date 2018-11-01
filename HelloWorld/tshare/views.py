@@ -2,6 +2,7 @@ from django.shortcuts import render
 from . import models as tmd
 from . import dbtools
 from datetime import datetime
+import time
 from django.http import JsonResponse,HttpResponse,HttpResponseRedirect
 # Create your views here.
 
@@ -73,12 +74,10 @@ def add_note(request):
 	r_code = request.GET['r_code']
 	r_type = request.GET['r_type']
 	r_url = request.GET['r_url']
-
+	r_time = time.time()
 	r_content = request.GET['r_content']
-	#r_content 是string，但替换没有任何效果。
-	r_content.replace('\n', "<br>");
-	r_content.replace(' ', "&nbsp");
-	tmd.Note.objects.create(t_date = r_date,t_name = r_name,t_code = r_code,t_type = r_type, t_content = r_content)
+	
+	tmd.Note.objects.create(t_stamp = r_time, t_date = r_date, t_name = r_name,t_code = r_code,t_type = r_type, t_content = r_content)
 	
 	return HttpResponseRedirect(r_url)
 
