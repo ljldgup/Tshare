@@ -41,13 +41,13 @@
 				</tbody>
 			</table>
 		</div>
-		<div style="width: 740px; float: left;margin-left: 20px;">
+		<div style="width: 750px; float: left;margin-left: 20px;">
 			<!--纵向滚动条，英语换行-->
-			<div style="width: 720px; float: left; margin-left: 20px; max-height: 430px; OVERFLOW-Y: auto; OVERFLOW-X:auto; word-break:break-all"  id="note_area">
+			<div style="width: 740px; float: left; margin-left: 10px; max-height: 400px; OVERFLOW-Y: auto; OVERFLOW-X:auto; word-break:break-all"  id="note_area">
 				{% autoescape off %}
 					{% for i in note %}
 					<div style="width: 700px; float: left;">
-						{{i.t_date}}:<br>{{i.t_content}}
+						<b>{{i.t_date}}</b><br><br>{{i.t_content}}
 						<br>
 						<hr/>
 					</div>
@@ -60,11 +60,12 @@
 		</div>
 		<div style="width: 450px; float: left; margin-left: 20px; max-height: 430px; OVERFLOW-Y: auto; OVERFLOW-X:auto; word-break:break-all"  id="note_area">
 		
-			<form action="/add_note/" method="get" style="margin-left: 20px; float: left;" id="write_note" >
+			<form action="/add_note/" method="post" style="margin-left: 20px; float: left;" id="write_note" >
+					{%csrf_token%}
 					<input type="hidden" value="" name="r_date" id="r_date"/>
 					<input type="hidden" value="{{r_code}}" name="r_code" id="r_code"/>
 					<input type="hidden" value="{{r_name}}" name="r_name" id="r_name"/>
-					<input type="hidden" value="operation" name="r_type" id="r_type"/>
+					<input type="hidden" value="个股操作" name="r_type" id="r_type"/>
 					<input type="hidden" value="" name="r_url" id = "r_url"/>
 					<input type="hidden" value="" name="r_content" id = "r_content"/>
 				<div id="show_box" style="width:420px; max-height:450px; border: 1px solid gray;"></div>
@@ -100,6 +101,7 @@
 				'#32CD32',
 				'#0000FF'
 			]
+			editor.customConfig.pasteFilterStyle = false;
 			editor.create();
 			
 			document.getElementById('copy').addEventListener('click', function () {

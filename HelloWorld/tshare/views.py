@@ -37,7 +37,7 @@ def trade_detail(request,r_code):
 	ori_data = tmd.OriginalTradeData.objects.filter(code = r_code)
 	k_data = tmd.K_days.objects.filter(code = r_code)
 	note = tmd.Note.objects.filter(t_code = r_code)
-	note = note.filter(t_type = "operation")
+	note = note.filter(t_type = "个股操作")
 	try:
 		st_date = request.GET['st_date']
 		if st_date != "":
@@ -53,7 +53,7 @@ def trade_detail(request,r_code):
 			ori_data = ori_data.filter(date__lte = ed_date_dtm)
 	except BaseException as e:
 		print(e)
-		
+	note = note.order_by('-t_date','t_stamp')
 	data = {}
 	data['ori_data'] = ori_data;
 	data['r_code'] = r_code
@@ -67,17 +67,18 @@ def all_note(request):
 	note = tmd.Note.objects.all()
 	data['note'] = note
 	return render(request, 'tshare/all_note.html',data)
-		
+
+
 def add_note(request):
-	r_date = request.GET['r_date']
-	r_name = request.GET['r_name']
-	r_code = request.GET['r_code']
-	r_type = request.GET['r_type']
-	r_url = request.GET['r_url']
+	r_date = request.POST['r_date']
+	r_name = request.POST['r_name']
+	r_code = request.POST['r_code']
+	r_type = request.POST['r_type']
+	r_url = request.POST['r_url']
 	r_time = time.time()
-	r_content = request.GET['r_content']
+	r_content = request.POST['r_content']
 	
-	tmd.Note.objects.create(t_stamp = r_time, t_date = r_date, t_name = r_name,t_code = r_code,t_type = r_type, t_content = r_content)
+	tmd.Note.objects.create(t_stamp = str(r_time), t_date = r_date, t_name = r_name,t_code = r_code,t_type = r_type, t_content = r_content)
 	
 	return HttpResponseRedirect(r_url)
 

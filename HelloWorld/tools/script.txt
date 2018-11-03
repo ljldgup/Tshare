@@ -3,8 +3,9 @@ alter table statistic_trade_data ADD PRIMARY KEY('index')
 use django_test;
 create table note(
 	id bigint,
-    t_stamp float,
+    t_stamp text,
 	t_date text,
+	t_name text,
 	t_code text,
 	t_type text,
 	t_content text
