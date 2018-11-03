@@ -116,12 +116,12 @@
 				});
 				
 
-				function init_table(stat_table,ini_data){
+				function init_table(table,ini_data){
 					for(var i = 0; i < ini_data.length;i++){
 						if( i == ini_data.length - 1){
-							stat_table.row.add(ini_data[i].slice(1,8)).draw( true );
+							table.row.add(ini_data[i].slice(1,8)).draw( true );
 						}else{
-							stat_table.row.add(ini_data[i].slice(1,8));
+							table.row.add(ini_data[i].slice(1,8));
 						}
 					}
 					

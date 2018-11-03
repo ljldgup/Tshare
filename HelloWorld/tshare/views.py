@@ -81,6 +81,28 @@ def add_note(request):
 	
 	return HttpResponseRedirect(r_url)
 
+def note_json(request):
+	note = tmd.Note.objects.all()
+	try:
+		st_date = request.GET['st_date']
+		if st_date != "":
+			st_date_dtm = datetime.strptime(st_date, "%Y-%m-%d")
+			note = note.filter(t_date__gte = st_date_dtm)
+	except BaseException as e:
+		print(e)
+	
+	#卖出时间小于等于ed_date	
+	try:
+		ed_date = request.GET['ed_date']
+		if ed_date != "":
+			ed_date_dtm = datetime.strptime(ed_date, "%Y-%m-%d") 
+			note = note.filter(t_date__lte = ed_date_dtm)
+	except BaseException as e:
+		print(e)
+	note_list = []
+	for i in note:
+		note_list.append([i.t_stamp, i.t_date, i.t_name, i.t_type, i.t_content])
+	return JsonResponse(note_list, safe=False)
 	
 def k_data_json(request,r_code):
 
@@ -123,7 +145,6 @@ def trade_data_json(request):
 	except BaseException as e:
 		print("r_name:")
 		print(e)
-		
 	stat_list = []
 	for i in stat_data:
 		stat_list.append([i.code,i.name,str(i.i_date),str(i.o_date),i.i_total,i.time,i.earning,i.pct])

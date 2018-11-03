@@ -47,29 +47,32 @@
 				{% autoescape off %}
 					{% for i in note %}
 					<div style="width: 700px; float: left;">
-						'{{i.t_date}}':<br>'{{i.t_content}}'
+						{{i.t_date}}:<br>{{i.t_content}}
+						<br>
+						<hr/>
 					</div>
 					{% endfor %}
 				{% endautoescape %}
 			</div>
 			<br>
-			<form action="/add_note/" method="get" style="margin-left: 20px; float: left; width: 710px;" id="write_note" >
+
+			<button type="button" id="copy" >复制</button>
+		</div>
+		<div style="width: 450px; float: left; margin-left: 20px; max-height: 430px; OVERFLOW-Y: auto; OVERFLOW-X:auto; word-break:break-all"  id="note_area">
+		
+			<form action="/add_note/" method="get" style="margin-left: 20px; float: left;" id="write_note" >
 					<input type="hidden" value="" name="r_date" id="r_date"/>
 					<input type="hidden" value="{{r_code}}" name="r_code" id="r_code"/>
 					<input type="hidden" value="{{r_name}}" name="r_name" id="r_name"/>
 					<input type="hidden" value="operation" name="r_type" id="r_type"/>
 					<input type="hidden" value="" name="r_url" id = "r_url"/>
 					<input type="hidden" value="" name="r_content" id = "r_content"/>
-					<br>
-					<br>
-				<div id="show_box" style="width:740; min-height=200; border: 1px solid gray;"></div>
+				<div id="show_box" style="width:420px; max-height:450px; border: 1px solid gray;"></div>
 					<br>
 					<br>
 					<input type="button" name="h" value="提交" id="h" onclick="buttonsubmit()" />
 			</form>
-			<button type="button" id="copy" >复制</button>
-		</div>
-
+		<div>
 	</div>
 	<script>
 		//用于观察div 排版
@@ -77,6 +80,8 @@
 
 		$(document).ready( function () {
 			$('#detail_data').DataTable();
+			$('#copy').hide();
+			$('p').css('margin','0 auto');
 			var E = window.wangEditor;
 		    var editor = new E('#show_box');
 			editor.customConfig.menus = [
