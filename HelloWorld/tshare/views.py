@@ -35,7 +35,7 @@ def trade_detail(request,r_code):
 	#store_k_data to tmp table
 	dbtools.storekdata(r_code)
 	ori_data = tmd.OriginalTradeData.objects.filter(code = r_code)
-	r_name = ori_data[1].name
+	r_name = ori_data[0].name
 	k_data = tmd.K_days.objects.filter(code = r_code)
 	note = tmd.Note.objects.filter(t_name = r_name)
 	note = note.filter(t_type = "个股操作")
