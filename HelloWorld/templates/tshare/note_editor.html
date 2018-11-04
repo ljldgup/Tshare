@@ -14,7 +14,7 @@
 			<button type="button" id="copy" >复制</button>
 			<form action="/add_note/" method="post" style="margin-left: 20px; float: left;" id="write_note" >
 					{%csrf_token%}
-					<input type="date" value="" name="r_date" id="r_date"/>
+					<input type="date" value="{{r_date|date:"Y-m-d"}}" name="r_date" id="r_date"/>
 					&nbsp&nbsp&nbsp&nbsp
 					股票<input type="text" value="{{r_name | default_if_none:""}}" name="r_name" id="r_name" />
 					&nbsp&nbsp&nbsp&nbsp
@@ -77,7 +77,6 @@
 				var url = self.location.href;
 				params = url.split("?");
 				if (params.length > 1) {
-					$('#r_date').val(params[1].split("=")[1])
 					var json_url = "/note_json/?" + params[1];
 					$.getJSON(json_url, function(data){
 						//console.log(data);
