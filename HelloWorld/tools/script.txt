@@ -3,10 +3,10 @@ alter table statistic_trade_data ADD PRIMARY KEY('index')
 use django_test;
 create table note(
 	id bigint,
-    t_stamp text,
-	t_date text,
-	t_name text,
-	t_code text,
-	t_type text,
+    t_stamp varchar(25),
+	t_date date,
+	t_name varchar(20),
+	t_type varchar(20),
 	t_content text
 	)
+ALTER TABLE django_test.note ADD UNIQUE (t_stamp);

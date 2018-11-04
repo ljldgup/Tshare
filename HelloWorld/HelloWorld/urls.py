@@ -32,5 +32,6 @@ urlpatterns = [
 	path('trade_data_json/', tshare_views.trade_data_json, name='trade_data_json'),
 	path('add_note/', tshare_views.add_note, name='add_note'),
 	path('all_note/', tshare_views.all_note, name='add_note'),
-	path('note_json/', tshare_views.note_json, name='note_json')
+	path('note_json/', tshare_views.note_json, name='note_json'),
+	path('note_editor/', tshare_views.note_editor, name='note_editor')
 ]
