@@ -71,7 +71,7 @@
 					
 				}, false)
 				
-				$("#r_type option:selected").text("{{r_type | default:"每日复盘"}}");
+				$("#r_type option:selected").text("每日复盘");
 				
 				//使用json初始化笔记
 				var url = self.location.href;
@@ -82,6 +82,7 @@
 					$.getJSON(json_url, function(data){
 						//console.log(data);
 						editor.txt.html(data[0][4]);
+						$("#r_type").find("option[value = '{{r_type}}']").attr("selected","selected");
 					});
 				}
 				
