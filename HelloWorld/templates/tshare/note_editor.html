@@ -94,7 +94,13 @@
 				//可在此修改input            
 				//进行下一步
 				$('#r_url').val(self.location.href);
-				$('#write_note').submit();
+				if(self.location.href.indexOf('?') != -1){
+					if(confirm("当前是修改，确认覆盖？")){
+						$('#write_note').submit();
+					}
+				}
+				else $('#write_note').submit();
+				
 			}
 			
 			function getCurrentDate() {
