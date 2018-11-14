@@ -14,32 +14,7 @@
 	</div>
 	<script type="text/javascript">
 		$.ajaxSetup({async:false});
-		// 基于准备好的dom，初始化echarts实例
-		var myChart1 = echarts.init(document.getElementById('main1'));
-		var myChart2 = echarts.init(document.getElementById('main2'));
-		// 指定图表的配置项和数据
-		var option = {
-			title: {
-				text: 'ECharts 入门示例'
-			},
-			tooltip: {},
-			legend: {
-				data:['销量']
-			},
-			xAxis: {
-				data: ["衬衫","羊毛衫","雪纺衫","裤子","高跟鞋","袜子"]
-			},
-			yAxis: {},
-			series: [{
-				name: '销量',
-				type: 'bar',
-				data: [5, 20, 36, 10, 10, 20]
-			}]
-		};
 
-		//使用json初始化
-		myChart1.setOption(option);
-		myChart2.setOption(option);
 		var stat_data;
 		var test;
 		var json_url = "/trade_data_json/";
@@ -53,14 +28,42 @@
 			stat_data = data;
 		});
 		
-		var t = x_axis_gen(stat_data);
-		
+		var x = x_axis_gen(stat_data);
+		var rst1 = static_data_gen1(x,stat_data);
 		$(document).ready( function () {
 
 		});
 		
-		function static_data_gen(ori_data){
-			
+		function static_data_gen1(x_axis, ori_data){
+			var total_count = [];
+			var win_count = [];
+			var earning = [];
+			var tmp_total,tmp_win,tmp_earning,st=0;
+			for (var i = 0; i < x_axis.length; i++) {
+				x_date = x_axis[i];
+				tmp_total = tmp_win = tmp_earning = 0;
+				for (; st < ori_data.length; st++) {
+					console.log(i);
+					console.log(st);
+					console.log(ori_data[st][3].substring(0,7));
+					console.log(x_axis[i])
+					if(ori_data[st][3].substring(0,7) == x_axis[i]){
+						tmp_total++;
+						tmp_earning += ori_data[st][6];
+						if(ori_data[st][6] > 0) tmp_win++;
+					}
+					if(ori_data[st][3].substring(0,7) > x_axis[i]) break;
+				}
+				total_count[i] = tmp_total;
+				win_count[i] = tmp_win;
+				earning[i] = tmp_earning;
+				
+			}
+			return{
+				total_count:total_count,
+				win_count:win_count,
+				earning:earning
+			}
 		}
 		
 		function x_axis_gen(data){
@@ -74,8 +77,14 @@
 			var max_x = max_year + '-' + max_month
 			var tmp_year = parseInt(min_year);
 			var tmp_month = parseInt(min_month);
-			var tmp_x = tmp_year + '-' + tmp_month
 			
+			if (tmp_month < 10) {
+				tmp_x = tmp_year + '-0' + tmp_month;
+			}
+			else{
+				tmp_x = tmp_year + '-' + tmp_month;
+			}
+		
 			while(tmp_x <= max_x ){
 				x_axis.push(tmp_x);
 				if(tmp_month < 12){
@@ -90,13 +99,73 @@
 				else{
 					tmp_x = tmp_year + '-' + tmp_month;
 				}
-				
-				console.log('tmp:' + tmp_x);
-				console.log('max:' + max_x);
 			}
 			return x_axis;
 		}
 		
+		
+		
+				// 基于准备好的dom，初始化echarts实例
+		var myChart1 = echarts.init(document.getElementById('main1'));
+		var myChart2 = echarts.init(document.getElementById('main2'));
+		// 指定图表的配置项和数据
+		var option1 = {
+		
+
+
+			title: {
+				text: '交易次数统计'
+			},
+			tooltip: {},
+			legend: {
+				data:['月份']
+			},
+			xAxis: {
+				axisLabel: {
+					interval:1,
+					rotate:-90
+				},
+				minInterval: 100,
+				data: x
+			},
+			yAxis: {},
+			series: [{
+				name: '总次数',
+				type: 'bar',
+				data: rst1.total_count
+			},{
+				name: '成功次数',
+				type: 'bar',
+				data: rst1.win_count
+			}]
+		};
+		
+		var option2 = {
+			title: {
+				text: '盈亏统计'
+			},
+			tooltip: {},
+			legend: {
+				data:['月份']
+			},
+			xAxis: {
+				axisLabel: {
+					interval:1,
+					rotate:-90
+				},
+				data: x
+			},
+			yAxis: {},
+			series: [{
+				name: '总盈亏',
+				type: 'bar',
+				data: rst1.earning
+			}]
+		};
+		
+		//使用json初始化
+		myChart1.setOption(option1);
+		myChart2.setOption(option2);
 	</script>
 </body>
 </html>
