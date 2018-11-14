@@ -8,6 +8,7 @@ from django.http import JsonResponse,HttpResponse,HttpResponseRedirect
 
 dbrefreshed = False
 
+#html response
 def trade_report(request):
 	global dbrefreshed
 	if dbrefreshed == False:
@@ -91,6 +92,10 @@ def note_editor(request):
 		
 	return render(request, 'tshare/note_editor.html',data)
 
+def trade_statistics(request):
+	data = {}
+	return render(request, 'tshare/trade_statistics.html',data)
+	
 
 def add_note(request):
 	r_date = request.POST['r_date']
@@ -122,6 +127,7 @@ def add_note(request):
 				return HttpResponseRedirect(r_url)
 	return HttpResponseRedirect(r_url)
 
+#json data response
 def note_json(request):
 	note_list = []
 	
