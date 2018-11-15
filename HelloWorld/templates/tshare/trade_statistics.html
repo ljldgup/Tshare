@@ -8,9 +8,22 @@
 
 <body>
 	<!-- 为ECharts准备一个具备大小（宽高）的Dom -->
+	
+	<div style="width: 750px;height:100px;">
+		<h1>个人交易汇总</h1>
+		<form action="/trade_statistics/" method="get"
+			style="float: left; width: 760px;">
+			开始时间<input type="date" id="st_date" name="st_date"
+				value="{{st_date | default_if_none:"2017-01-01"}}"> &nbsp;&nbsp;&nbsp;
+			结束时间<input type="date" id="ed_date" name="ed_date"
+				value="{{ed_date | default_if_none:""}}">  &nbsp;&nbsp;&nbsp;<input
+				type="submit" value="提交">
+		</form>
+	</div>
+		
 	<div id="main" style="width: 1200px;height:1000px;">
-		<div id="main1" style="width: 750px;height:200px;"></div>
-		<div id="main2" style="width: 750px;height:200px;"></div>
+		<div id="main1" style="width: 900px;height:300px;"></div>
+		<div id="main2" style="width: 900px;height:300px;"></div>
 	</div>
 	<script type="text/javascript">
 		$.ajaxSetup({async:false});
@@ -43,10 +56,10 @@
 				x_date = x_axis[i];
 				tmp_total = tmp_win = tmp_earning = 0;
 				for (; st < ori_data.length; st++) {
-					console.log(i);
-					console.log(st);
-					console.log(ori_data[st][3].substring(0,7));
-					console.log(x_axis[i])
+					//console.log(i);
+					//console.log(st);
+					//console.log(ori_data[st][3].substring(0,7));
+					//console.log(x_axis[i])
 					if(ori_data[st][3].substring(0,7) == x_axis[i]){
 						tmp_total++;
 						tmp_earning += ori_data[st][6];
@@ -132,11 +145,39 @@
 			series: [{
 				name: '总次数',
 				type: 'bar',
-				data: rst1.total_count
+				data: rst1.total_count,
+				barWidth: 10, 
+				itemStyle:{ 
+					normal:{ 
+					color:'#0000FF',
+					label: {
+						show: true, //开启显示
+						position: 'top', //在上方显示
+						textStyle: { //数值样式
+							color: 'black',
+							fontSize: 10
+							}
+						}
+					}
+				}
 			},{
 				name: '成功次数',
 				type: 'bar',
-				data: rst1.win_count
+				data: rst1.win_count,
+				barWidth: 10, 
+				itemStyle:{ 
+					normal:{ 
+					color:'#FF0000',
+					label: {
+						show: true, //开启显示
+						position: 'top', //在上方显示
+						textStyle: { //数值样式
+							color: 'black',
+							fontSize: 10
+							}
+						}
+					}
+				}
 			}]
 		};
 		
@@ -159,6 +200,25 @@
 			series: [{
 				name: '总盈亏',
 				type: 'bar',
+				barWidth: 10, 
+				itemStyle: {
+					normal: {
+						// 颜色
+						color: function(params) { 
+							if(params.data > 0) return '#FF0000';
+							return '#00FF00'; 
+						},
+						
+						label: {
+							show: true, //开启显示
+							position: 'top', //在上方显示
+							textStyle: { //数值样式
+								color: 'black',
+								fontSize: 10
+							}
+						}
+					},
+				},
 				data: rst1.earning
 			}]
 		};

@@ -94,6 +94,14 @@ def note_editor(request):
 
 def trade_statistics(request):
 	data = {}
+	try:
+		st_date = request.GET['st_date']
+		ed_date = request.GET['ed_date']
+		data['st_date'] = st_date
+		data['ed_date'] = ed_date
+
+	except Exception as e:
+		print(e)
 	return render(request, 'tshare/trade_statistics.html',data)
 	
 
