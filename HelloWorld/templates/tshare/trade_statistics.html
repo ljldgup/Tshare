@@ -10,77 +10,36 @@
 	<!-- 为ECharts准备一个具备大小（宽高）的Dom -->
 	
 	<div style="width: 750px;height:100px;">
-		<h1>个人交易汇总</h1>
-		<form action="/trade_statistics/" method="get"
+		<h1>交易统计</h1>
+			<form action="/trade_statistics/" method="get"
 			style="float: left; width: 760px;">
 			开始时间<input type="date" id="st_date" name="st_date"
-				value="{{st_date | default_if_none:"2017-01-01"}}"> &nbsp;&nbsp;&nbsp;
+					value="{{st_date | default_if_none:"2017-01-01"}}"> &nbsp;&nbsp;&nbsp;
 			结束时间<input type="date" id="ed_date" name="ed_date"
-				value="{{ed_date | default_if_none:""}}">  &nbsp;&nbsp;&nbsp;<input
-				type="submit" value="提交">
-		</form>
+					value="{{ed_date | default_if_none:""}}">  &nbsp;&nbsp;&nbsp;<input
+					type="submit" value="确定">
+			</form>
+
 	</div>
 		
 	<div id="main" style="width: 1200px;height:1000px;">
 		<div id="main1" style="width: 900px;height:300px;"></div>
 		<div id="main2" style="width: 900px;height:300px;"></div>
+		<div id="main3" style="width: 900px;height:300px;"></div>
+		<div id="main4" style="width: 900px;height:300px;"></div>
 	</div>
 	<script type="text/javascript">
+		
 		$.ajaxSetup({async:false});
-
-		var stat_data;
-		var test;
-		var json_url = "/trade_data_json/";
-		var url = self.location.href;
-		params = url.split("?");
-		if (params.length > 1) {
-			json_url += "?" + params[1];
-		}
+		var myChart1 = echarts.init(document.getElementById('main1'));
+		var myChart2 = echarts.init(document.getElementById('main2'));
+		var myChart3 = echarts.init(document.getElementById('main3'));
+		var myChart4 = echarts.init(document.getElementById('main4'));
+		//盈亏最小百分比(3的倍数)
+		var pct_min;
 		
-		$.getJSON(json_url, function(data){
-			stat_data = data;
-		});
-		
-		var x = x_axis_gen(stat_data);
-		var rst1 = static_data_gen1(x,stat_data);
-		$(document).ready( function () {
-
-		});
-		
-		function static_data_gen1(x_axis, ori_data){
-			var total_count = [];
-			var win_count = [];
-			var earning = [];
-			var tmp_total,tmp_win,tmp_earning,st=0;
-			for (var i = 0; i < x_axis.length; i++) {
-				x_date = x_axis[i];
-				tmp_total = tmp_win = tmp_earning = 0;
-				for (; st < ori_data.length; st++) {
-					//console.log(i);
-					//console.log(st);
-					//console.log(ori_data[st][3].substring(0,7));
-					//console.log(x_axis[i])
-					if(ori_data[st][3].substring(0,7) == x_axis[i]){
-						tmp_total++;
-						tmp_earning += ori_data[st][6];
-						if(ori_data[st][6] > 0) tmp_win++;
-					}
-					if(ori_data[st][3].substring(0,7) > x_axis[i]) break;
-				}
-				total_count[i] = tmp_total;
-				win_count[i] = tmp_win;
-				earning[i] = tmp_earning;
-				
-			}
-			return{
-				total_count:total_count,
-				win_count:win_count,
-				earning:earning
-			}
-		}
-		
-		function x_axis_gen(data){
-
+		function x_axis_gen1(data){
+			//生成时间x轴
 			var x_axis = [];
 			var min_year = data[0][3].split("-")[0];
 			var min_month = data[0][3].split("-")[1];
@@ -116,116 +75,314 @@
 			return x_axis;
 		}
 		
+		function static_data_gen1(x_axis, data){
+			//按日期进行交易次数 盈亏统计
+			var total_count = [];
+			var win_count = [];
+			var earning = [];
+			var tmp_total,tmp_win,tmp_earning,st=0;
+			for (var i = 0; i < x_axis.length; i++) {
+				x_date = x_axis[i];
+				tmp_total = tmp_win = tmp_earning = 0;
+				for (; st < data.length; st++) {
+					//console.log(i);
+					//console.log(st);
+					//console.log(data[st][2].substring(0,7));
+					//console.log(x_axis[i])
+					if(data[st][2].substring(0,7) == x_axis[i]){
+						tmp_total++;
+						tmp_earning += data[st][6];
+						if(data[st][6] > 0) tmp_win++;
+					}
+					if(data[st][2].substring(0,7) > x_axis[i]) break;
+				}
+				total_count[i] = tmp_total;
+				win_count[i] = tmp_win;
+				earning[i] = tmp_earning;
+				
+			}
+			return{
+				total_count:total_count,
+				win_count:win_count,
+				earning:earning
+			}
+		}
 		
-		
-				// 基于准备好的dom，初始化echarts实例
-		var myChart1 = echarts.init(document.getElementById('main1'));
-		var myChart2 = echarts.init(document.getElementById('main2'));
+
 		// 指定图表的配置项和数据
-		var option1 = {
-		
-
-
-			title: {
-				text: '交易次数统计'
-			},
-			tooltip: {},
-			legend: {
-				data:['月份']
-			},
-			xAxis: {
-				axisLabel: {
-					interval:1,
-					rotate:-90
+		function refresh1(data, chart1, chart2){
+				//按日期进行交易次数 盈亏统计图标
+				var x = x_axis_gen1(data);
+				var rst = static_data_gen1(x,data);
+				var option1 = {
+				title: {
+					text: '按月次数统计'
 				},
-				minInterval: 100,
-				data: x
-			},
-			yAxis: {},
-			series: [{
-				name: '总次数',
-				type: 'bar',
-				data: rst1.total_count,
-				barWidth: 10, 
-				itemStyle:{ 
-					normal:{ 
-					color:'#0000FF',
-					label: {
-						show: true, //开启显示
-						position: 'top', //在上方显示
-						textStyle: { //数值样式
-							color: 'black',
-							fontSize: 10
-							}
-						}
-					}
-				}
-			},{
-				name: '成功次数',
-				type: 'bar',
-				data: rst1.win_count,
-				barWidth: 10, 
-				itemStyle:{ 
-					normal:{ 
-					color:'#FF0000',
-					label: {
-						show: true, //开启显示
-						position: 'top', //在上方显示
-						textStyle: { //数值样式
-							color: 'black',
-							fontSize: 10
-							}
-						}
-					}
-				}
-			}]
-		};
-		
-		var option2 = {
-			title: {
-				text: '盈亏统计'
-			},
-			tooltip: {},
-			legend: {
-				data:['月份']
-			},
-			xAxis: {
-				axisLabel: {
-					interval:1,
-					rotate:-90
+				tooltip: {},
+				legend: {
+					data:['月份']
 				},
-				data: x
-			},
-			yAxis: {},
-			series: [{
-				name: '总盈亏',
-				type: 'bar',
-				barWidth: 10, 
-				itemStyle: {
-					normal: {
-						// 颜色
-						color: function(params) { 
-							if(params.data > 0) return '#FF0000';
-							return '#00FF00'; 
-						},
-						
+				xAxis: {
+					axisLabel: {
+						interval:0,
+						rotate:30
+					},
+					minInterval: 0,
+					data: x
+				},
+				yAxis: {},
+				series: [{
+					name: '总次数',
+					type: 'bar',
+					data: rst.total_count,
+					barWidth: 7, 
+					itemStyle:{ 
+						normal:{ 
+						color:'#0000FF',
 						label: {
 							show: true, //开启显示
 							position: 'top', //在上方显示
 							textStyle: { //数值样式
 								color: 'black',
 								fontSize: 10
+								}
 							}
 						}
-					},
+					}
+				},{
+					name: '成功次数',
+					type: 'bar',
+					data: rst.win_count,
+					barWidth: 7, 
+					itemStyle:{ 
+						normal:{ 
+						color:'#FF0000',
+						label: {
+							show: true, //开启显示
+							position: 'top', //在上方显示
+							textStyle: { //数值样式
+								color: 'black',
+								fontSize: 10
+								}
+							}
+						}
+					}
+				}]
+			};
+			
+			var option2 = {
+				title: {
+					text: '按月盈亏统计'
 				},
-				data: rst1.earning
-			}]
-		};
+				tooltip: {},
+				legend: {
+					data:['月份']
+				},
+				xAxis: {
+					axisLabel: {
+						interval:0,
+						rotate:30
+					},
+					data: x
+				},
+				yAxis: {},
+				series: [{
+					name: '总盈亏',
+					type: 'bar',
+					barWidth: 9, 
+					itemStyle: {
+						normal: {
+							// 颜色
+							color: function(params) { 
+								if(params.data > 0) return '#FF0000';
+								return '#00FF00'; 
+							},
+							
+							label: {
+								show: true, //开启显示
+								position: 'top', //在上方显示
+								textStyle: { //数值样式
+									color: 'black',
+									fontSize: 10
+								}
+							}
+						},
+					},
+					data: rst.earning
+				}]
+			};
+			
+			//使用json初始化
+			chart1.setOption(option1);
+			chart2.setOption(option2);
+		}
 		
-		//使用json初始化
-		myChart1.setOption(option1);
-		myChart2.setOption(option2);
+		function x_axis_gen2(data, interval){
+			//interval 盈亏点数间隔默认3
+			//生成盈亏点数x轴
+			var x_axis = [];
+			var min = 0;
+			var max = 0;
+			for (var i = 0; i < data.length; i++) {
+				if(data[i][7] > max) max = data[i][7];
+				if(data[i][7] < min) min = data[i][7];
+			}
+			min = parseInt(min/interval)*interval - interval;
+			max = parseInt(max/interval)*interval + interval;
+			pct_min = min;
+			tmp = min;
+			while(tmp < max){
+				x_axis.push(tmp + ' ~ ' +(tmp + interval))
+				tmp += interval;
+			}
+			return x_axis;
+		}
+		
+		function static_data_gen2(x_axis, data, interval){
+			//按盈亏点数交易次数 盈亏统计
+			var count = [];
+			var earning = [];
+			var pt;
+			
+			for (var i = 0; i < x_axis.length; i++){
+				count[i] = earning[i] = 0;
+			}
+			
+			for (var i=0;i < data.length; i++) {
+				//console.log(i);
+				pt = parseInt((parseInt(data[i][7] - pct_min)/interval))
+				count[pt]++;
+				earning[pt] += data[i][6]
+			}
+			return{
+				count:count,
+				earning:earning
+			}
+		}
+		
+		function refresh2(data, chart1, chart2){
+			//按日期进行交易次数 盈亏统计图标
+			x = x_axis_gen2(stat_data,2);
+			rst = static_data_gen2(x,stat_data,2);
+			var option1 = {
+				title: {
+					text: '按比例次数统计'
+				},
+				tooltip: {},
+				legend: {
+					data:['比例']
+				},
+				xAxis: {
+					axisLabel: {
+						interval:0,
+						rotate:30
+					},
+					minInterval: 0,
+					data: x
+				},
+				yAxis: {},
+				series: [{
+					name: '次数',
+					type: 'bar',
+					data: rst.count,
+					barWidth: 9, 
+					itemStyle:{ 
+						normal:{ 
+						color:'#0000FF',
+						label: {
+							show: true, //开启显示
+							position: 'top', //在上方显示
+							textStyle: { //数值样式
+								color: 'black',
+								fontSize: 10
+								}
+							}
+						}
+					}
+				}]
+			};
+			
+			var option2 = {
+				title: {
+					text: '按比例盈亏统计'
+				},
+				tooltip: {},
+				legend: {
+					data:['比例']
+				},
+				xAxis: {
+					axisLabel: {
+						interval:0,
+						rotate:30
+					},
+					data: x
+				},
+				yAxis: {},
+				series: [{
+					name: '盈亏',
+					type: 'bar',
+					barWidth: 9, 
+					itemStyle: {
+						normal: {
+							// 颜色
+							color: function(params) { 
+								if(params.data > 0) return '#FF0000';
+								return '#00FF00'; 
+							},
+							
+							label: {
+								show: true, //开启显示
+								position: 'top', //在上方显示
+								textStyle: { //数值样式
+									color: 'black',
+									fontSize: 10
+								}
+							}
+						},
+					},
+					data: rst.earning
+				}]
+			};
+			
+			//使用json初始化
+			chart1.setOption(option1);
+			chart2.setOption(option2);
+		}
+		
+		function data_set(data){
+			//获取日期，用于页面内刷新，目前未使用
+			var myDate = new Date();
+			ed_date = $("#ed_date").val();
+			if(ed_date == ""){
+				ed_date = myDate.getFullYear() + '-' + (myDate.getMonth()+1);
+				$("#ed_date").val(myDate.getFullYear() + '-' + (myDate.getMonth()+1) + '-' + myDate.getDate());
+			}
+			st_date = $("#st_date").val();
+			if(st_date == ""){
+				st_date = myDate.getFullYear() + '-' + (myDate.getMonth()+1);
+				$("#st_date").val((myDate.getFullYear()-1) + '-' + (myDate.getMonth()+1) + '-' + myDate.getDate());
+			}
+		}
+		
+		var stat_data;
+		var json_url = "/trade_data_json/";
+		var url = self.location.href;
+		params = url.split("?");
+		if (params.length > 1) {
+			json_url += "?" + params[1];
+		}
+		
+		$.getJSON(json_url, function(data){
+			stat_data = data;
+		});
+		
+		$(document).ready( function () {
+			// 基于准备好的dom，初始化echarts实例
+			refresh1(stat_data, myChart1, myChart2);
+			refresh2(stat_data, myChart3, myChart4);
+			data_set();
+		});
+		
 	</script>
 </body>
 </html>
