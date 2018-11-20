@@ -23,6 +23,7 @@
 	</div>
 		
 	<div id="main" style="width: 1200px;height:1000px;">
+		<div id="main0" style="width: 900px;height:300px;"></div>
 		<div id="main1" style="width: 900px;height:300px;"></div>
 		<div id="main2" style="width: 900px;height:300px;"></div>
 		<div id="main3" style="width: 900px;height:300px;"></div>
@@ -31,12 +32,68 @@
 	<script type="text/javascript">
 		
 		$.ajaxSetup({async:false});
+		var myChart0 = echarts.init(document.getElementById('main0'));
 		var myChart1 = echarts.init(document.getElementById('main1'));
 		var myChart2 = echarts.init(document.getElementById('main2'));
 		var myChart3 = echarts.init(document.getElementById('main3'));
 		var myChart4 = echarts.init(document.getElementById('main4'));
 		//盈亏最小百分比(3的倍数)
 		var pct_min;
+		//最近交易次数
+		var trade_num;
+		function refresh0(data, chart0){
+			//按日期进行交易次数 盈亏统计图标
+			var x = [];
+			var rst = [];
+			for(var i=0;i<data.length;i++){
+				x[i] = data[i][1];
+				rst[i] = parseInt(data[i][7]*100)/100;
+			}
+			var option0 = {
+				title: {
+					text: '近二十次交易'
+				},
+				tooltip: {},
+				legend: {
+					data:['月份']
+				},
+				xAxis: {
+					axisLabel: {
+						interval:0,
+						rotate:45
+					},
+					minInterval: 0,
+					data: x
+				},
+				yAxis: {},
+				series: [{
+					name: '总次数',
+					type: 'bar',
+					data: rst,
+					barWidth: 7, 
+					itemStyle: {
+						normal: {
+							// 颜色
+							color: function(params) { 
+								if(params.data > 0) return '#FF0000';
+								return '#00FF00'; 
+							},
+							
+							label: {
+								show: true, //开启显示
+								position: 'top', //在上方显示
+								textStyle: { //数值样式
+									color: 'black',
+									fontSize: 10
+								}
+							}
+						},
+					},
+				}]
+			};
+			//使用json初始化
+			chart0.setOption(option0);
+		}
 		
 		function x_axis_gen1(data){
 			//生成时间x轴
@@ -378,6 +435,7 @@
 		
 		$(document).ready( function () {
 			// 基于准备好的dom，初始化echarts实例
+			refresh0(stat_data.slice(stat_data.length-20, stat_data.length),myChart0);
 			refresh1(stat_data, myChart1, myChart2);
 			refresh2(stat_data, myChart3, myChart4);
 			data_set();
