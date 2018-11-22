@@ -28,6 +28,7 @@
 		<div id="main2" style="width: 900px;height:300px;"></div>
 		<div id="main3" style="width: 900px;height:300px;"></div>
 		<div id="main4" style="width: 900px;height:300px;"></div>
+		<div id="main5" style="width: 900px;height:300px;"></div>
 	</div>
 	<script type="text/javascript">
 		
@@ -37,21 +38,25 @@
 		var myChart2 = echarts.init(document.getElementById('main2'));
 		var myChart3 = echarts.init(document.getElementById('main3'));
 		var myChart4 = echarts.init(document.getElementById('main4'));
+		var myChart5 = echarts.init(document.getElementById('main5'));
 		//盈亏最小百分比(3的倍数)
 		var pct_min;
 		//最近交易次数
 		var trade_num;
-		function refresh0(data, chart0){
+		function refresh0(data, n, chart1, chart2){
 			//按日期进行交易次数 盈亏统计图标
 			var x = [];
-			var rst = [];
+			var rst1 = [];
+			var rst2 = [];
 			for(var i=0;i<data.length;i++){
 				x[i] = data[i][1];
-				rst[i] = parseInt(data[i][7]*100)/100;
+				rst1[i] = parseInt(data[i][7]*100)/100;
+				if(i == 0) rst2[i] = data[i][6];
+				else rst2[i] =rst2[i-1] + data[i][6];
 			}
-			var option0 = {
+			var option1 = {
 				title: {
-					text: '近二十次交易'
+					text: '最近' + n + '交易盈亏比例'
 				},
 				tooltip: {},
 				legend: {
@@ -69,7 +74,7 @@
 				series: [{
 					name: '总次数',
 					type: 'bar',
-					data: rst,
+					data: rst1,
 					barWidth: 7, 
 					itemStyle: {
 						normal: {
@@ -91,8 +96,50 @@
 					},
 				}]
 			};
-			//使用json初始化
-			chart0.setOption(option0);
+			
+			var option2 = {
+				title: {
+					text: '最近' + n +'次交易盈亏累计'
+				},
+				tooltip: {},
+				legend: {
+					data:['月份']
+				},
+				xAxis: {
+					axisLabel: {
+						interval:0,
+						rotate:45
+					},
+					minInterval: 0,
+					data: x
+				},
+				yAxis: {},
+				series: [{
+					name: '总次数',
+					type: 'line',
+					data: rst2,
+					itemStyle: {
+						normal: {
+							// 颜色
+							color: function(params) { 
+								if(params.data > 0) return '#FF0000';
+								return '#00FF00'; 
+							},
+							
+							label: {
+								show: true, //开启显示
+								position: 'top', //在上方显示
+								textStyle: { //数值样式
+									color: 'black',
+									fontSize: 10
+								}
+							}
+						},
+					},
+				}]
+			};
+			chart1.setOption(option1);
+			chart2.setOption(option2);
 		}
 		
 		function x_axis_gen1(data){
@@ -435,9 +482,9 @@
 		
 		$(document).ready( function () {
 			// 基于准备好的dom，初始化echarts实例
-			refresh0(stat_data.slice(stat_data.length-20, stat_data.length),myChart0);
-			refresh1(stat_data, myChart1, myChart2);
-			refresh2(stat_data, myChart3, myChart4);
+			refresh0(stat_data.slice(stat_data.length-20, stat_data.length), 20, myChart0,myChart1);
+			refresh1(stat_data, myChart2, myChart3);
+			refresh2(stat_data, myChart4, myChart5);
 			data_set();
 		});
 		
