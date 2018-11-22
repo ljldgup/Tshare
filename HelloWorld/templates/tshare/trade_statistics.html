@@ -9,26 +9,30 @@
 <body>
 	<!-- 为ECharts准备一个具备大小（宽高）的Dom -->
 	
+
 	<div style="width: 750px;height:100px;">
-		<h1>交易统计</h1>
 			<form action="/trade_statistics/" method="get"
 			style="float: left; width: 760px;">
-			开始时间<input type="date" id="st_date" name="st_date"
+			显示最近&nbsp <input type="text" style="width: 20px" id="n" name="n"
+					value="{{n | default_if_none:"20"}}"> &nbsp次 &nbsp;&nbsp;&nbsp;
+			统计开始时间<input type="date" id="st_date" name="st_date"
 					value="{{st_date | default_if_none:"2017-01-01"}}"> &nbsp;&nbsp;&nbsp;
-			结束时间<input type="date" id="ed_date" name="ed_date"
+			统计结束时间<input type="date" id="ed_date" name="ed_date"
 					value="{{ed_date | default_if_none:""}}">  &nbsp;&nbsp;&nbsp;<input
 					type="submit" value="确定">
 			</form>
-
 	</div>
-		
+	
 	<div id="main" style="width: 1200px;height:1000px;">
 		<div id="main0" style="width: 900px;height:300px;"></div>
 		<div id="main1" style="width: 900px;height:300px;"></div>
+		<br>
 		<div id="main2" style="width: 900px;height:300px;"></div>
 		<div id="main3" style="width: 900px;height:300px;"></div>
+		<br>
 		<div id="main4" style="width: 900px;height:300px;"></div>
 		<div id="main5" style="width: 900px;height:300px;"></div>
+		<br>
 	</div>
 	<script type="text/javascript">
 		
@@ -45,11 +49,13 @@
 		var trade_num;
 		function refresh0(data, n, chart1, chart2){
 			//按日期进行交易次数 盈亏统计图标
-			var x = [];
+			var x1 = [];
+			var x2 = [];
 			var rst1 = [];
 			var rst2 = [];
 			for(var i=0;i<data.length;i++){
-				x[i] = data[i][1];
+				x1[i] = data[i][1];
+				x2[i] = data[i][3];
 				rst1[i] = parseInt(data[i][7]*100)/100;
 				if(i == 0) rst2[i] = data[i][6];
 				else rst2[i] =rst2[i-1] + data[i][6];
@@ -68,7 +74,7 @@
 						rotate:45
 					},
 					minInterval: 0,
-					data: x
+					data: x1
 				},
 				yAxis: {},
 				series: [{
@@ -98,9 +104,6 @@
 			};
 			
 			var option2 = {
-				title: {
-					text: '最近' + n +'次交易盈亏累计'
-				},
 				tooltip: {},
 				legend: {
 					data:['月份']
@@ -111,7 +114,7 @@
 						rotate:45
 					},
 					minInterval: 0,
-					data: x
+					data: x2
 				},
 				yAxis: {},
 				series: [{
@@ -366,8 +369,8 @@
 		
 		function refresh2(data, chart1, chart2){
 			//按日期进行交易次数 盈亏统计图标
-			x = x_axis_gen2(stat_data,2);
-			rst = static_data_gen2(x,stat_data,2);
+			x = x_axis_gen2(data,2);
+			rst = static_data_gen2(x,data,2);
 			var option1 = {
 				title: {
 					text: '按比例次数统计'
@@ -453,7 +456,7 @@
 			chart2.setOption(option2);
 		}
 		
-		function data_set(data){
+		function data_set(){
 			//获取日期，用于页面内刷新，目前未使用
 			var myDate = new Date();
 			ed_date = $("#ed_date").val();
@@ -470,21 +473,25 @@
 		
 		var stat_data;
 		var json_url = "/trade_data_json/";
+		data_set();
+		$.getJSON(json_url, function(data){
+			stat_data0 = data;
+		});
+		
 		var url = self.location.href;
-		params = url.split("?");
-		if (params.length > 1) {
-			json_url += "?" + params[1];
-		}
+		
+		json_url += "?" + "ed_date=" + $("#ed_date").val() + "&st_date=" + $("#st_date").val();
 		
 		$.getJSON(json_url, function(data){
-			stat_data = data;
+			stat_data1 = data;
 		});
 		
 		$(document).ready( function () {
+			num1 = parseInt($("#n").val());
 			// 基于准备好的dom，初始化echarts实例
-			refresh0(stat_data.slice(stat_data.length-20, stat_data.length), 20, myChart0,myChart1);
-			refresh1(stat_data, myChart2, myChart3);
-			refresh2(stat_data, myChart4, myChart5);
+			refresh0(stat_data0.slice(stat_data0.length-num1, stat_data0.length), num1, myChart0,myChart1);
+			refresh1(stat_data1, myChart2, myChart3);
+			refresh2(stat_data1, myChart4, myChart5);
 			data_set();
 		});
 		
