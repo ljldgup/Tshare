@@ -33,6 +33,8 @@
 		<div id="main4" style="width: 900px;height:300px;"></div>
 		<div id="main5" style="width: 900px;height:300px;"></div>
 		<br>
+		<div id="main6" style="width: 900px;height:300px;"></div>
+		<div id="main7" style="width: 900px;height:300px;"></div>
 	</div>
 	<script type="text/javascript">
 		
@@ -43,6 +45,8 @@
 		var myChart3 = echarts.init(document.getElementById('main3'));
 		var myChart4 = echarts.init(document.getElementById('main4'));
 		var myChart5 = echarts.init(document.getElementById('main5'));
+		var myChart6 = echarts.init(document.getElementById('main6'));
+		var myChart7 = echarts.init(document.getElementById('main7'));
 		//盈亏最小百分比(3的倍数)
 		var pct_min;
 		//最近交易次数
@@ -410,9 +414,6 @@
 			};
 			
 			var option2 = {
-				title: {
-					text: '按比例盈亏统计'
-				},
 				tooltip: {},
 				legend: {
 					data:['比例']
@@ -456,6 +457,152 @@
 			chart2.setOption(option2);
 		}
 		
+		function x_axis_gen3(data, interval){
+			var x_axis = [];
+			var max = 0;
+			for (var i = 0; i < data.length; i++) {
+				if(data[i][5] > max) max = data[i][5];
+			}
+			
+			max = parseInt((max-1)/interval)*interval + interval;
+			tmp = 0;
+			while(tmp < max){
+				x_axis.push(tmp + ' ~ ' +(tmp + interval))
+				tmp += interval;
+			}
+			return x_axis;
+		}
+		
+		function static_data_gen3(x_axis, data, interval){
+			//按持股天数统计次数
+			var count = [];
+			var win = [];
+			var earning = [];
+			var pt;
+			
+			for (var i = 0; i < x_axis.length; i++){
+				count[i] = earning[i] = win[i] = 0;
+			}
+			
+			for (var i=0;i < data.length; i++) {
+				//console.log(i);
+				pt = parseInt((parseInt(data[i][5])-1)/interval)
+				count[pt]++;
+				if(data[i][6]>0) win[pt]++;
+				earning[pt] += data[i][6];
+			}
+			return{
+				total_count:count,
+				win_count:win,
+				earning:earning
+			}
+		}
+		
+		function refresh3(data, chart1, chart2){
+			//按持股时长进行交易次数 成功统计图标
+			var x = x_axis_gen3(data,10);
+			var rst = static_data_gen3(x,data,10);
+			var option1 = {
+				title: {
+					text: '持股周期统计'
+				},
+				tooltip: {},
+				legend: {
+					data:['时长']
+				},
+				xAxis: {
+					axisLabel: {
+						interval:0,
+						rotate:30
+					},
+					minInterval: 0,
+					data: x
+				},
+				yAxis: {},
+				series: [{
+					name: '总次数',
+					type: 'bar',
+					data: rst.total_count,
+					barWidth: 7, 
+					itemStyle:{ 
+						normal:{ 
+						color:'#0000FF',
+						label: {
+							show: true, //开启显示
+							position: 'top', //在上方显示
+							textStyle: { //数值样式
+								color: 'black',
+								fontSize: 10
+								}
+							}
+						}
+					}
+				},{
+					name: '成功次数',
+					type: 'bar',
+					data: rst.win_count,
+					barWidth: 7, 
+					itemStyle:{ 
+						normal:{ 
+						color:'#FF0000',
+						label: {
+							show: true, //开启显示
+							position: 'top', //在上方显示
+							textStyle: { //数值样式
+								color: 'black',
+								fontSize: 10
+								}
+							}
+						}
+					}
+				}]
+			};
+			
+			var option2 = {
+				tooltip: {},
+				legend: {
+					data:['时长']
+				},
+				xAxis: {
+					axisLabel: {
+						interval:0,
+						rotate:30
+					},
+					data: x
+				},
+				yAxis: {},
+				series: [{
+					name: '总盈亏',
+					type: 'bar',
+					barWidth: 9, 
+					itemStyle: {
+						normal: {
+							// 颜色
+							color: function(params) { 
+								if(params.data > 0) return '#FF0000';
+								return '#00FF00'; 
+							},
+							
+							label: {
+								show: true, //开启显示
+								position: 'top', //在上方显示
+								textStyle: { //数值样式
+									color: 'black',
+									fontSize: 10
+								}
+							}
+						},
+					},
+					data: rst.earning
+				}]
+			};
+			
+			//使用json初始化
+			chart1.setOption(option1);
+			chart2.setOption(option2);
+		}
+		
+		
 		function data_set(){
 			//获取日期，用于页面内刷新，目前未使用
 			var myDate = new Date();
@@ -492,6 +639,7 @@
 			refresh0(stat_data0.slice(stat_data0.length-num1, stat_data0.length), num1, myChart0,myChart1);
 			refresh1(stat_data1, myChart2, myChart3);
 			refresh2(stat_data1, myChart4, myChart5);
+			refresh3(stat_data1, myChart6, myChart7);
 			data_set();
 		});
 		
