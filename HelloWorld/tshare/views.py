@@ -40,21 +40,6 @@ def trade_detail(request,r_code):
 	k_data = tmd.K_days.objects.filter(code = r_code)
 	note = tmd.Note.objects.filter(t_name = r_name)
 	note = note.filter(t_type = "个股操作")
-	try:
-		st_date = request.GET['st_date']
-		if st_date != "":
-			st_date_dtm = datetime.strptime(st_date, "%Y-%m-%d")
-			ori_data = ori_data.filter(date__gte = st_date_dtm)
-	except Exception as e:
-		print(e)
-		
-	try:
-		ed_date = request.GET['ed_date']
-		if ed_date != "":
-			ed_date_dtm = datetime.strptime(ed_date, "%Y-%m-%d") 
-			ori_data = ori_data.filter(date__lte = ed_date_dtm)
-	except Exception as e:
-		print(e)
 	note = note.order_by('-t_date','-t_stamp')
 	data = {}
 	data['ori_data'] = ori_data;
@@ -209,12 +194,12 @@ def trade_data_json(request):
 	except Exception as e:
 		print(e)
 	
-	#卖出时间小于等于ed_date	
+	#买入时间小于等于ed_date	
 	try:
 		ed_date = request.GET['ed_date']
 		if ed_date != "":
 			ed_date_dtm = datetime.strptime(ed_date, "%Y-%m-%d") 
-			stat_data = stat_data.filter(o_date__lte = ed_date_dtm)
+			stat_data = stat_data.filter(i_date__lte = ed_date_dtm)
 	except Exception as e:
 		print(e)
 	

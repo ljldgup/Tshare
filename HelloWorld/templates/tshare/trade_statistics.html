@@ -66,7 +66,7 @@
 			}
 			var option1 = {
 				title: {
-					text: '最近' + n + '交易盈亏比例'
+					text: '最近' + n + '次交易统计（按卖出时间）'
 				},
 				tooltip: {},
 				legend: {
@@ -227,7 +227,7 @@
 				var rst = static_data_gen1(x,data);
 				var option1 = {
 				title: {
-					text: '按月次数统计'
+					text: '按月统计（按买入时间）'
 				},
 				tooltip: {},
 				legend: {
@@ -282,9 +282,6 @@
 			};
 			
 			var option2 = {
-				title: {
-					text: '按月盈亏统计'
-				},
 				tooltip: {},
 				legend: {
 					data:['月份']
@@ -377,7 +374,7 @@
 			rst = static_data_gen2(x,data,2);
 			var option1 = {
 				title: {
-					text: '按比例次数统计'
+					text: '按比例统计'
 				},
 				tooltip: {},
 				legend: {
@@ -504,7 +501,7 @@
 			var rst = static_data_gen3(x,data,10);
 			var option1 = {
 				title: {
-					text: '持股周期统计'
+					text: '按持股时长统计'
 				},
 				tooltip: {},
 				legend: {
@@ -625,9 +622,7 @@
 			stat_data0 = data;
 		});
 		
-		var url = self.location.href;
-		
-		json_url += "?" + "ed_date=" + $("#ed_date").val() + "&st_date=" + $("#st_date").val();
+		json_url += "?ed_date=" + $("#ed_date").val() + "&st_date=" + $("#st_date").val();
 		
 		$.getJSON(json_url, function(data){
 			stat_data1 = data;
