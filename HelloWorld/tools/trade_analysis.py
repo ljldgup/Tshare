@@ -8,6 +8,8 @@ import pandas as pd
 from sqlalchemy import create_engine
 import dbtest
 import os
+sys.path.append("..")
+from HelloWorld import settings
 
 def use_proxy():
     HTTP_PROXY = "http_proxy"
@@ -210,8 +212,11 @@ if __name__ == '__main__':
 
     t_data3 = analysis3(t_data1)
 
-    #yconnect = create_engine('mysql+pymysql://ljl:123123@localhost:3306/django_test?charset=utf8')
-    yconnect = create_engine('sqlite:///db.sqlite3')
+	if('sqlite' in settings.DATABASES['default']['ENGINE']):
+		url= 'sqlite:///' + settings.DATABASES['default']['NAME']
+	else:
+		url = 'mysql+pymysql://' + settings.DATABASES['default']['USER'] + ':' + settings.DATABASES['default']['PASSWORD'] + '@localhost:3306/' + settings.DATABASES['default']['NAME'] + '?charset=utf8'
+	yconnect = create_engine(url)
 
     t_data1['id']= t_data1.index -3
     t_data1.to_sql("statistic_trade_data",con=yconnect,if_exists='replace')

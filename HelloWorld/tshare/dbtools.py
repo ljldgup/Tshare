@@ -21,9 +21,9 @@ from HelloWorld import settings
 
 
 if('sqlite' in settings.DATABASES['default']['ENGINE']):
-	url= 'sqlite:///'+settings.DATABASES['default']['NAME']
+	url= 'sqlite:///' + settings.DATABASES['default']['NAME']
 else:
-	url = 'mysql+pymysql://ljl:123123@localhost:3306/django_test?charset=utf8'
+	url = 'mysql+pymysql://' + settings.DATABASES['default']['USER'] + ':' + settings.DATABASES['default']['PASSWORD'] + '@localhost:3306/' + settings.DATABASES['default']['NAME'] + '?charset=utf8'
 yconnect = create_engine(url)
 
 #delete k data
