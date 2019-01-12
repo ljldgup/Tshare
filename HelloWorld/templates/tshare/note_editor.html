@@ -15,15 +15,10 @@
 			<form action="/add_note/" method="post" style="margin-left: 20px; float: left;" id="write_note" >
 					{%csrf_token%}
 					<input type="date" value="{{r_date|date:"Y-m-d"}}" name="r_date" id="r_date"/>
+                    &nbsp&nbsp&nbsp&nbsp
+                    类型<input type="text" value="{{r_type | default_if_none:""}}" name="r_type" id="r_type" />
 					&nbsp&nbsp&nbsp&nbsp
-					股票<input type="text" value="{{r_name | default_if_none:""}}" name="r_name" id="r_name" />
-					&nbsp&nbsp&nbsp&nbsp
-					<select name="r_type" id="r_type"> 
-						<option value="每日复盘">每日复盘</option> 
-						<option value="个股操作">个股操作</option> 
-						<option value="个股分析">个股分析</option> 
-						<option value="经验纪律">经验纪律</option> 
-					</select> 
+					关键词<input type="text" value="{{r_name | default_if_none:""}}" name="r_name" id="r_name" />
 					<input type="button" name="h" value="提交" id="h" style="float: right;" onclick="buttonsubmit()" />
 					<br><br>
 					<input type="hidden" value="" name="r_url" id = "r_url"/>
@@ -95,7 +90,7 @@
 				//进行下一步
 				$('#r_url').val(self.location.href);
 				if(self.location.href.indexOf('?') != -1){
-					if(confirm("当前是修改，确认覆盖？")){
+					if(confirm("确认覆盖？")){
 						$('#write_note').submit();
 					}
 				}

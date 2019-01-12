@@ -11,7 +11,7 @@
 	
 	<body style="background: rgb(250, 250, 255)">
 	<div style="width: 1000px; margin-left: 40px">
-		<h1>个人交易汇总</h1>
+		<h1>交易及生活笔记</h1>
 		<form action="/all_note/" method="get"
 			style="float: left; width: 760px;">
 			开始时间<input type="date" id="st_date" name="st_date"
@@ -77,9 +77,11 @@
 								"createdCell": function (td, cellData, rowData, row, col) {
 									var tmp = $(td).html();
 									tmp = "<div style=\"width: 90px; float: left;\">" + tmp;
-									tmp = tmp + "</div>"
-									tmp += "<br><br><a href=\"http://localhost:8888/note_editor/?r_stamp=" + note_data[row][0] + "\" target=\"_blank\">修改此条</a>";
+                                    tmp += "<br><br>" + note_data[row][1];
+									tmp += "<br><br><a href=\"http://localhost:8888/note_editor/?r_stamp=" + note_data[row][0] + "\" target=\"_blank\">修改</a>";
+                                    tmp += "&nbsp;&nbsp;<a href=\"javascript:void(0);\" onclick =\"delete_note(" + note_data[row][0] + ")\">删除</a>";
 									$(td).html(tmp);
+                                    tmp = tmp + "</div>"
 								}
 							},
 														{
@@ -101,6 +103,14 @@
 					
 				});
 				
+                function delete_note(r_stamp){
+                    var del_url,callback;
+                    del_url = "http://localhost:8888/delete_note/?r_stamp=" + r_stamp;
+                    if(confirm("确认删除？")){
+                        $.get(del_url,callback);
+                        window.location.reload();
+					}
+                }
 
 				function init_table(table,ini_data){
 					for(var i = 0; i < ini_data.length;i++){
