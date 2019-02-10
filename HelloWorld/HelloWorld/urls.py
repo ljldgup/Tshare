@@ -16,24 +16,33 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from django.conf.urls import url
-from learn import views as learn_views
-from calc import views as calc_views
+
+#from learn import views as learn_views
+#from calc import views as calc_views
+
 from tshare import views as tshare_views
 from . import view
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-	url(r'^$', learn_views.home, name = 'home'),
-	path('add/', calc_views.add, name = 'add'),
-	path('new_add/<int:a>/<int:b>/', calc_views.add2, name = 'add2' ),
-	url('trade_report/', tshare_views.trade_report,name = 'trade_report'),
-	path('trade_detail/<str:r_code>/', tshare_views.trade_detail, name='trade_detail'),
-	path('k_data_json/<str:r_code>/', tshare_views.k_data_json, name='k_data_json'),
-	path('trade_data_json/', tshare_views.trade_data_json, name='trade_data_json'),
-	path('add_note/', tshare_views.add_note, name='add_note'),
-	path('delete_note/', tshare_views.delete_note, name='delete_note'),
-	path('all_note/', tshare_views.all_note, name='all_note'),
-	path('note_json/', tshare_views.note_json, name='note_json'),
-	path('note_editor/', tshare_views.note_editor, name='note_editor'),
-	path('trade_statistics/', tshare_views.trade_statistics, name='trade_statistics')
+    
+#    url(r'^$', learn_views.home, name = 'home'),
+#    path('add/', calc_views.add, name = 'add'),
+#    path('new_add/<int:a>/<int:b>/', calc_views.add2, name = 'add2' ),
+
+    url(r'^$', tshare_views.homepage, name = 'home'),
+    url('trade_report/', tshare_views.trade_report,name = 'trade_report'),
+    path('trade_detail/<str:r_code>/', tshare_views.trade_detail, name='trade_detail'),
+    path('all_note/', tshare_views.all_note, name='all_note'),
+    path('note_editor/', tshare_views.note_editor, name='note_editor'),
+    path('trade_statistics/', tshare_views.trade_statistics, name='trade_statistics'),
+    
+#data operation
+    path('add_note/', tshare_views.add_note, name='add_note'),
+    path('delete_note/', tshare_views.delete_note, name='delete_note'),
+
+#json data
+    path('note_json/', tshare_views.note_json, name='note_json'),
+    path('k_data_json/<str:r_code>/', tshare_views.k_data_json, name='k_data_json'),
+    path('trade_data_json/', tshare_views.trade_data_json, name='trade_data_json')
 ]

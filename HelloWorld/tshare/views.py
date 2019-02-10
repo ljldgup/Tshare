@@ -8,6 +8,9 @@ from django.http import JsonResponse,HttpResponse,HttpResponseRedirect
 
 dbrefreshed = False
 
+def homepage(request):
+	return render(request, 'tshare/home.html',{})
+
 #html response
 def trade_report(request):
     global dbrefreshed
