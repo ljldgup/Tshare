@@ -52,7 +52,22 @@ class K_days(models.Model):
     class Meta:
         managed = False
         db_table = 'k_bfq'
-		
+
+class K_weeks(models.Model):
+    index = models.BigIntegerField(blank=True, null=True)
+    date = models.TextField(blank=True, null=True)
+    open = models.FloatField(blank=True, null=True)
+    close = models.FloatField(blank=True, null=True)
+    high = models.FloatField(blank=True, null=True)
+    low = models.FloatField(blank=True, null=True)
+    volume = models.FloatField(blank=True, null=True)
+    code = models.TextField(blank=True, null=True)
+    id = models.BigIntegerField(primary_key=True)
+
+    class Meta:
+        managed = False
+        db_table = 'k_qfq'
+
 class Note(models.Model):
     id = models.BigIntegerField(primary_key=True)
     t_stamp = models.CharField(unique=True, max_length=25, blank=True, null=True)

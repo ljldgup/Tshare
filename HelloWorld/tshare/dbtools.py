@@ -10,7 +10,6 @@ from sqlalchemy import create_engine
 import tushare as ts
 import time
 import sys
-import os
 import urllib.request
 
 sys.path.append("..")

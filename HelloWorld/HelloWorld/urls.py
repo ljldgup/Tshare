@@ -21,7 +21,7 @@ from django.conf.urls import url
 #from calc import views as calc_views
 
 from tshare import views as tshare_views
-from . import view
+from tshare import rest as rest_service
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -36,13 +36,16 @@ urlpatterns = [
     path('all_note/', tshare_views.all_note, name='all_note'),
     path('note_editor/', tshare_views.note_editor, name='note_editor'),
     path('trade_statistics/', tshare_views.trade_statistics, name='trade_statistics'),
+    path('share_analysis/<str:r_code>/', tshare_views.share_analysis, name='share_analysis'),
     
 #data operation
     path('add_note/', tshare_views.add_note, name='add_note'),
     path('delete_note/', tshare_views.delete_note, name='delete_note'),
 
 #json data
-    path('note_json/', tshare_views.note_json, name='note_json'),
-    path('k_data_json/<str:r_code>/', tshare_views.k_data_json, name='k_data_json'),
-    path('trade_data_json/', tshare_views.trade_data_json, name='trade_data_json')
+    path('note_json/', rest_service.note_json, name='note_json'),
+    path('k_data_json/<str:r_code>/', rest_service.k_data_json, name='k_data_json'),
+    path('trade_data_json/', rest_service.trade_data_json, name='trade_data_json'),
+    path('ori_trade_data_json/', rest_service.ori_trade_data_json, name='ori_trade_data_json'),
+    path('trend_data_json/<str:r_code>/', rest_service.trend_data_json, name='trend_data_json')
 ]
