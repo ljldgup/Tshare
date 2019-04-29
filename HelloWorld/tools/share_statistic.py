@@ -83,7 +83,7 @@ class Share:
             peak = float(data.close[peakIndex])
             cur = float(data.close[curIndex])
             
-            if judge(peak, cur):
+            if judge(cur, peak):
                 peakIndex = curIndex
                 weekCount = 0
                 
@@ -106,32 +106,28 @@ class Share:
         
         for i in ris_pct_index.index:
             
-            if i < endIndex:
+            if i <= endIndex:
                 continue
             
-            endIndex = self.trend_judge(data, i)
+            tmpIndex = self.trend_judge(data, i)
             
             if endIndex != i:
-                begPrice = float(data.close[i])
-                endPrice = float(data.close[endIndex])
+                #print('{0},{1},{2},{3}'.format(i,tmpIndex,data.date[i],data.date[tmpIndex]))
+                #注意是前一周的收盘价，不是当前周的开盘价，涨跌幅都是收盘价算的
+                begPrice = float(data.close[i-1])
+                endPrice = float(data.close[tmpIndex])
                 pct = kp2dig(endPrice/begPrice-1)
+                #print('{0},{1},{2}'.format(begPrice,endPrice,pct))
                 
                 if pct > self.upPct or pct < self.downPct:
-                    trendData['start_date'].append(data.date[i+1])
+                    endIndex = tmpIndex
+                    trendData['start_date'].append(data.date[i])
                     trendData['end_date'].append(data.date[endIndex])
                     trendData['pct'].append(pct)
                     trendData['last_weeks'].append(endIndex-i+1)
-                    trendData['open'].append(data.close[i])
+                    trendData['open'].append(data.close[i-1])
                     trendData['close'].append(data.close[endIndex])
                 
-            #如果涨幅大于upPct 
-            elif data.at[i,'pct_chg'] > self.upPct or data.at[i,'pct_chg'] < self.downPct :
-                trendData['start_date'].append(data.date[i])
-                trendData['end_date'].append(data.date[endIndex+1])
-                trendData['pct'].append(float(data.pct_chg[i]))
-                trendData['last_weeks'].append(1)
-                trendData['open'].append(data.open[i])
-                trendData['close'].append(data.close[i])
                     
         return pandas.DataFrame(trendData)
     
@@ -140,7 +136,7 @@ class Share:
         #涨幅大于pct大概率 和时长大于time的概率
         
         data = self.basData
-        trendData = self.trendData
+        trendData = self.trendData[self.trendData.pct > 0 ]
         
         #对于上升趋势的总体统计
         if self.kType=='D':
@@ -177,7 +173,6 @@ class Share:
         result += '上涨幅度 >= ' + str(pct) + '% 的概率: ' + str(kp2dig(len(trendData[trendData.pct >= pct ])/len(trendData))) + ' %' + '\n'
         result += '上涨时长 >= ' + str(time) + timeUnit + ': ' + str(kp2dig(len(trendData[trendData.last_weeks >= time ])/len(trendData))) + ' %' + '\n'
         print(result)
-        return trendData[trendData.pct >= pct ]
         
         
 
@@ -185,7 +180,7 @@ class Share:
         
         #跌幅大于pct大概率 和时长大于time的概率
         data = self.basData
-        trendData = self.trendData
+        trendData = self.trendData[self.trendData.pct < 0 ]
         
         #对于上升趋势的总体统计
         if self.kType=='D':
@@ -207,9 +202,9 @@ class Share:
         for i in data[data.pct_chg < self.downStartPct].index:
             if len(trendData[trendData.start_date < data.date[i]][trendData.end_date > data.date[i]]) > 0:
                 tempInt += 1
-        tempFloat = kp2dig(len(trendData)/(len(data[data.pct_chg > self.downStartPct])-tempInt))
+        tempFloat = kp2dig(len(trendData)/(len(data[data.pct_chg < self.downStartPct])-tempInt))
         
-        result += '下跌百分比 <= ' + str(self.downStartPct) + '% 的k线共 ' + str(len(data[data.pct_chg > self.upStartPct])) + ' 个' + '\n'
+        result += '下跌百分比 <= ' + str(self.downStartPct) + '% 的k线共 ' + str(len(data[data.pct_chg < self.downStartPct])) + ' 个' + '\n'
         result += '其中形成下跌趋势的有 ' + str(len(trendData)) + ' 个k线' + '\n'
         result += '去除下跌趋势中的 ' + str(tempInt) + ' 条k线，形成趋势概率' + str(tempFloat) + '%' + '\n' + '\n'
         result += '平均下跌幅度: ' + str(kp2dig(trendData.pct.mean()/100)) + ' %' + '\n'
@@ -220,7 +215,6 @@ class Share:
         result += '下跌幅度 <= ' + str(pct) + '% 的概率: ' + str(kp2dig(len(trendData[trendData.pct < pct ])/len(trendData))) + ' %' + '\n'
         result += '下跌时长 >= ' + str(time) + timeUnit + ': ' + str(kp2dig(len(trendData[trendData.last_weeks >= time ])/len(trendData))) + ' %' + '\n'
         print(result)
-        return trendData[trendData.pct <= pct ]
         
     
     def statistic(self):
@@ -231,9 +225,13 @@ class Share:
         #self.gen_ris_sta()        
 
 if __name__ == '__main__':
-    #上证指数
-    szIndex = Share('sh', 'W', '2000-07-06' , '2019-07-06')
-    szIndex.setJudgeCondition(1, 3, 10, -1.5, 3, -10)
-    szIndex.statistic()
-    #szIndex.gen_ris_sta(34, 10)
-    szIndex.gen_down_sta(-5, 4)
+    
+    Index = Share('sz', 'W', '1995-05-18' , '2019-07-06')
+    
+    #上证指数的周线系数可用度较高
+    #Index.setJudgeCondition(1, 4, 5, -1, 4, -5)
+    
+    Index.setJudgeCondition(1, 4, 5, -1, 4, -5)
+    Index.statistic()
+    Index.gen_ris_sta(34, 10)
+    Index.gen_down_sta(-5, 4)
