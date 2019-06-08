@@ -28,6 +28,12 @@ class Share:
         self.kType = kType
         self.startDate = startDate
         self.endDate = endDate
+        if self.kType=='D':
+            self.timeUnit='天'
+        elif self.kType=='W':
+            self.timeUnit='周'
+        else:
+            self.timeUnit='月'
         
     def setJudgeCondition(self, upStartPct, upLastTimes, upPct, downStartPct, downLastTimes, downPct):
         #上涨，下跌开始判定涨跌比百分率
@@ -55,13 +61,13 @@ class Share:
             dataBas['open'].append(float(data.open[i+1]))
             pct = float(pct_chg[i+1])
             dataBas['pct_chg'].append(kp2dig(pct))
+        
         return pandas.DataFrame(dataBas) 
     
     #统计上涨或下跌的趋势维持的时长
     #返回结束的Index
     def trend_judge(self, data, begIndex):
         
-       
         beginPct = data.pct_chg[begIndex]
         
         curIndex = begIndex
@@ -128,25 +134,17 @@ class Share:
                     trendData['open'].append(data.close[i-1])
                     trendData['close'].append(data.close[endIndex])
                 
-                    
-        return pandas.DataFrame(trendData)
+        #调整一下列名顺序，DateFrame创建时列名按字母排序
+        order = ['start_date', 'end_date', 'pct', 'last_weeks', 'open', 'close']
+        return pandas.DataFrame(trendData)[order]
     
-    def gen_ris_sta(self, pct, time):
-        
-        #涨幅大于pct大概率 和时长大于time的概率
+    def gen_ris_sta(self):
         
         data = self.basData
         trendData = self.trendData[self.trendData.pct > 0 ]
         
         #对于上升趋势的总体统计
-        if self.kType=='D':
-            timeUnit='天'
-        elif self.kType=='W':
-            timeUnit='周'
-        else:
-            timeUnit='月'
                 
-   
         result = ''
         result += '统计时间' + data.date[0] + '~' + data.date[len(data)-1] + ':\n' + '\n'
             
@@ -164,32 +162,40 @@ class Share:
         result += '其中形成趋势的有 ' + str(len(trendData)) + ' 个k线' + '\n'
         result += '去除上涨趋势中的 ' + str(tempInt) + ' 条k线，形成趋势概率' + str(tempFloat) + '%' + '\n' + '\n'
         result += '平均上涨幅度: ' + str(kp2dig(trendData.pct.mean()/100)) + ' %' + '\n'
-        result += '平均维持时长: ' + str(kp2dig(trendData.last_weeks.mean()/100)) + timeUnit + '\n' + '\n'
+        result += '平均维持时长: ' + str(kp2dig(trendData.last_weeks.mean()/100)) + self.timeUnit + '\n' + '\n'
         
+        print('-------------------------------------------------------------------------------')
         print(result)
+    
+    def gen_ris_trend(self, pct, time):
+        #涨幅大于pct大概率 和时长大于time的概率
+        trendData = self.trendData[self.trendData.pct > 0 ]
         
-        #具体统计
         result = '形成的趋势中'
+        
+        #根据统计，上涨幅度增加的可能性
         result += '上涨幅度 >= ' + str(pct) + '% 的概率: ' + str(kp2dig(len(trendData[trendData.pct >= pct ])/len(trendData))) + ' %' + '\n'
-        result += '上涨时长 >= ' + str(time) + timeUnit + ': ' + str(kp2dig(len(trendData[trendData.last_weeks >= time ])/len(trendData))) + ' %' + '\n'
+        #result += str(trendData[trendData.pct >= pct ]) + '\n'
+        
+        #根据统计，上涨时长增加的可能性
+        result += '上涨时长 >= ' + str(time) + self.timeUnit + ': ' + str(kp2dig(len(trendData[trendData.last_weeks >= time ])/len(trendData))) + ' %' + '\n'
+        #result += str(trendData[trendData.last_weeks >= time ]) + '\n'
+        
+        
+        #上涨猛烈程度评判
+        result += str(time) + self.timeUnit + '内上涨幅度 >= ' + str(pct) + '%的概率: ' + str(kp2dig(len(trendData[trendData.last_weeks < time ][trendData.pct >= pct ])/len(trendData))) + ' %' + '\n'
+        result += str(trendData[trendData.last_weeks < time ][trendData.pct > pct ]) + '\n'
+
+        print('-------------------------------------------------------------------------------')
         print(result)
         
         
-
-    def gen_down_sta(self, pct, time):
+    def gen_down_sta(self):
         
-        #跌幅大于pct大概率 和时长大于time的概率
         data = self.basData
         trendData = self.trendData[self.trendData.pct < 0 ]
         
         #对于上升趋势的总体统计
-        if self.kType=='D':
-            timeUnit='天'
-        elif self.kType=='W':
-            timeUnit='周'
-        else:
-            timeUnit='月'
-                
    
         result = ''
         result += '统计时间' + data.date[0] + '~' + data.date[len(data)-1] + ':\n' + '\n'
@@ -208,12 +214,31 @@ class Share:
         result += '其中形成下跌趋势的有 ' + str(len(trendData)) + ' 个k线' + '\n'
         result += '去除下跌趋势中的 ' + str(tempInt) + ' 条k线，形成趋势概率' + str(tempFloat) + '%' + '\n' + '\n'
         result += '平均下跌幅度: ' + str(kp2dig(trendData.pct.mean()/100)) + ' %' + '\n'
-        result += '平均维持时长: ' + str(kp2dig(trendData.last_weeks.mean()/100)) + timeUnit + '\n' + '\n'
+        result += '平均维持时长: ' + str(kp2dig(trendData.last_weeks.mean()/100)) + self.timeUnit + '\n' + '\n'
+
+        print('-------------------------------------------------------------------------------')
         print(result)
         
+
+        
+    def gen_down_trend(self, pct, time):
+        #跌幅大于pct大概率 和时长大于time的概率
+        trendData = self.trendData[self.trendData.pct < 0 ]
         result = '形成的趋势中'
-        result += '下跌幅度 <= ' + str(pct) + '% 的概率: ' + str(kp2dig(len(trendData[trendData.pct < pct ])/len(trendData))) + ' %' + '\n'
-        result += '下跌时长 >= ' + str(time) + timeUnit + ': ' + str(kp2dig(len(trendData[trendData.last_weeks >= time ])/len(trendData))) + ' %' + '\n'
+        
+        #根据统计，下跌幅度扩大的可能性
+        result += '下跌幅度 <= ' + str(pct) + '% 的概率: ' + str(kp2dig(len(trendData[trendData.pct <= pct ])/len(trendData))) + ' %' + '\n'
+        result += str(trendData[trendData.pct < pct ]) + '\n'
+        
+        #根据统计，下跌时长扩大的可能性
+        result += '下跌时长 >= ' + str(time) + self.timeUnit + ': ' + str(kp2dig(len(trendData[trendData.last_weeks >= time ])/len(trendData))) + ' %' + '\n'
+        result += str(trendData[trendData.last_weeks >= time ]) + '\n'
+        
+        #下跌猛烈评判
+        result += str(time) + self.timeUnit + '内下跌幅度 <= ' + str(pct) + '%的概率: ' + str(kp2dig(len(trendData[trendData.last_weeks < time ][trendData.pct < pct ])/len(trendData))) + ' %' + '\n'
+        result += str(trendData[trendData.last_weeks < time ][trendData.pct <= pct ]) + '\n'
+
+        print('-------------------------------------------------------------------------------')
         print(result)
         
     
@@ -233,5 +258,8 @@ if __name__ == '__main__':
     
     Index.setJudgeCondition(1, 4, 5, -1, 4, -5)
     Index.statistic()
-    Index.gen_ris_sta(34, 10)
-    Index.gen_down_sta(-5, 4)
+    Index.gen_ris_sta()
+    Index.gen_down_sta()
+    
+    Index.gen_ris_trend(37, 9)
+    Index.gen_down_trend(-17.5, 9)
