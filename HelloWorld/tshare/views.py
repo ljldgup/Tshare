@@ -17,19 +17,15 @@ def trade_report(request):
     if dbrefreshed == False:
         dbtools.refresh_k_data('k_bfq',)
         dbrefreshed = True
-    note = tmd.Note.objects.filter()
     data = {}
     try:
         st_date = request.GET['st_date']
         ed_date = request.GET['ed_date']
-        r_name = request.GET['r_name']
         data['st_date'] = st_date
         data['ed_date'] = ed_date
-        data['r_name'] = r_name
 
     except Exception as e:
         print(e)
-    data['note'] = note
     #保存页面数据
 
     return render(request, 'tshare/trade_report.html',data)

@@ -14,8 +14,6 @@
 		<h1>个人交易汇总</h1>
 		<form action="/trade_report/" method="get"
 			style="float: left; width: 760px;">
-			股票<input type="text" id="r_name" name="r_name"
-				value="{{r_name | default_if_none:""}}" style="width: 100px;margin-left: 32px"> <br>
 			开始时间<input type="date" id="st_date" name="st_date"
 				value="{{st_date | default_if_none:"2017-01-01"}}"> <br>
 			结束时间<input type="date" id="ed_date" name="ed_date"
