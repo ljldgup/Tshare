@@ -9,7 +9,7 @@ import tushare as ts
 import time
 import sys
 
-sys.path.append("..")
+sys.path.append('../')
 from HelloWorld import settings
 
 if('sqlite' in settings.DATABASES['default']['ENGINE']):

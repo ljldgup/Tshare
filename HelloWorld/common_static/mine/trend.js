@@ -6,7 +6,7 @@ var r_code = url.split('/')[4]
 var trendData = []
 
 $.ajaxSetup({async:false});
-$.getJSON("/trend_data_json/" + r_code , function(data){
+$.getJSON("/trade_data_json/" + r_code , function(data){
     trendData = data;
 })
 

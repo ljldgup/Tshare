@@ -25,8 +25,8 @@ def kp2dig(number):
 
 #补全股票代码
 def code_complete(code):
-    s_code = str(code)
-    for i in range(6-len(s_code)):
+    s_code = str(int(code))
+    for i in range(6 - len(s_code)):
         s_code = '0' + s_code
     return s_code
 

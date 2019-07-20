@@ -47,5 +47,5 @@ urlpatterns = [
     path('k_data_json/<str:r_code>/', rest_service.k_data_json, name='k_data_json'),
     path('trade_data_json/', rest_service.trade_data_json, name='trade_data_json'),
     path('ori_trade_data_json/', rest_service.ori_trade_data_json, name='ori_trade_data_json'),
-    path('trend_data_json/<str:r_code>/', rest_service.trend_data_json, name='trend_data_json')
+    path('trade_data_json/<str:r_code>/', rest_service.trade_data_json, name='trade_data_json')
 ]
