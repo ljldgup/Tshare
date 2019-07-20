@@ -78,7 +78,7 @@
 									$(td).css('width', '70px');
 									//console.log(typeof($(td).html()));
 									if($(td).html().indexOf('?') == -1){
-										$(td).html("<a href=\"/trade_detail/" + stat_data[row][0] + "\" onclick = getDate(this,\"" + String(stat_data[row][2]) + "\",\"" + String(stat_data[row][3]) + "\") target=\"_blank\">" + stat_data[row][1] + "</a>");
+										$(td).html("<div style=\"width:3cm\"><a href=\"/trade_detail/" + stat_data[row][0] + "\" onclick = getDate(this,\"" + String(stat_data[row][2]) + "\",\"" + String(stat_data[row][3]) + "\") target=\"_blank\">" + stat_data[row][1] + "</a></div>");
 									}
 								}
 							},
