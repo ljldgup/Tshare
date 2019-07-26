@@ -10,6 +10,12 @@ $.getJSON("/ori_trade_data_json/?r_code=" + r_code , function(data){
     detailData = data;
 })
 
+$.getJSON("/k_data_json/" + r_code + "/", function(data){
+    rData = data;
+})
+
+
+
 //操作标记点
 function getOperationMark(){
     var markData=[]
@@ -41,9 +47,7 @@ function calculateAmountCost(data) {
         if(url_param.indexOf("&") != -1){
             url_params = url_param.split('&');
         }
-    }
-
-    if(url_params == null ){
+    }else{
         url_params = [data0.categoryData[0],data0.categoryData[data0.categoryData.length - 1]];
     }
 
@@ -124,34 +128,10 @@ function getViewPostion(){
 //计算持仓过程中的盈亏，用于echart中回调
 function calculateEarning(params) {
     param = params[0];
-    var tmp = '日期: ' + param.name + '<hr size=1 style="margin: 3px 0">'
-    
-    //引入成交量后，两个图显示不一致，所以使用全局变量
-    tmp += '开盘: ' + this.data0.values[param.dataIndex][0] + '<br/>'
-    tmp += '收盘: ' + this.data0.values[param.dataIndex][1] + '<br/>'
 
-    //这个函数是在外部调用的所以要写option
-    if (this.pct_data1[param.dataIndex] > 0 ) {
-            tmp += '涨幅: <span style="color:red">' + this.pct_data1[param.dataIndex] + '&#37;</span><br/>'; 
-          } else {
-            tmp += '涨幅: <span style="color:green">' + this.pct_data1[param.dataIndex] + '&#37;</span><br/>';
-    };
-    tmp +='<hr size=1 style="margin: 3px 0">'
-    tmp += '振幅: ' + this.pct_data2[param.dataIndex] + '&#37;<br/>';
-    
-    if (this.pct_data3[param.dataIndex] > 0 ) {
-            tmp += '最高: <span style="color:red">' + this.pct_data3[param.dataIndex] + '&#37;</span><br/>'; 
-          } else {
-            tmp += '最高: <span style="color:green">' + this.pct_data3[param.dataIndex] + '&#37;</span><br/>';
-    };
-    
-    if (this.pct_data4[param.dataIndex] > 0 ) {
-            tmp += '最低: <span style="color:red">' + this.pct_data4[param.dataIndex] + '&#37;</span><br/>'; 
-          } else {
-            tmp += '最低: <span style="color:green">' + this.pct_data4[param.dataIndex] + '&#37;</span><br/>';
-    };
     //个人持仓量
-    var earning;
+    var earning,tmp;
+    tmp = '';
     if(param.dataIndex!=0 && this.data1.amount[param.dataIndex] == 0 && this.data1.amount[param.dataIndex-1] != 0){
         tmp +='<hr size=1 style="margin: 3px 0">'
         tmp += '持仓手数: ' + this.data1.amount[param.dataIndex] + '<br/>';

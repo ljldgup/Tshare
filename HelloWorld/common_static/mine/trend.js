@@ -1,14 +1,37 @@
+//是否有日期参数，没有则显示全部范围
 var url = self.location.href;
 var url_param;
 var r_code = url.split('/')[4]
 
 //交易数据
-var trendData = []
-
 $.ajaxSetup({async:false});
-$.getJSON("/trade_data_json/" + r_code , function(data){
-    trendData = data;
+$.getJSON("/trend_data_json/" + r_code , function(data){
+    rData = data.qfqData;
+    trendData = data.trendData;
 })
+
+//计算MA平均线，N日移动平均线=N日收盘价之和/N  dayCount要计算的天数(5,10,20,30)
+function calculateMA(dayCount) {
+    var result = [];
+    for (var i = 0, len = data0.values.length; i < len; i++) {
+        if (i < dayCount) {
+            result.push('-');
+            //alert(result);
+            continue;   //结束单次循环，即不输出本次结果
+        }
+        var sum = 0;
+        for (var j = 0; j < dayCount; j++) {
+            //收盘价总和
+            sum += data0.values[i - j][1];
+            //alert(sum);
+        }
+        result.push(sum / dayCount);
+       // alert(result);
+    }
+    return result;
+}
+
+
 
 function getTrendMarkLine(){
     var MarkLine={}
@@ -17,7 +40,8 @@ function getTrendMarkLine(){
       normal: {
         type: 'dash',
         color: '#0A0A0A',
-      }
+      },
+      symbolSize:5,
     }
     
     MarkLine.data = [];

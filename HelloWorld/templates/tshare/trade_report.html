@@ -26,10 +26,14 @@
 		<div style="width: 950px; float: left;">
 		
 			<script>
+                //获取k线图日期范围
 				function getDate(obj,st_data,ed_date)
 				{
-					var params = '?' + st_data + '&' + ed_date;
-					obj.href += params;
+                    //防止一个页面重复加
+                    if(obj.href.indexOf('?') == -1){
+                        var params = '?' + st_data + '&' + ed_date;
+                        obj.href += params;
+                    }
 				}
 			</script>
 			<table id="stat_table" border="1">
@@ -46,7 +50,7 @@
 					</tr>
 				</thead>
 
-				<tbody id = "stat_bady">
+				<tbody>
 				</tbody>
 			</table>
 			

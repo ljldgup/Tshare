@@ -1,11 +1,11 @@
 from django.shortcuts import render
 from . import models as tmd
 from . import dbtools
-import time
 from django.http import HttpResponseRedirect
 
-# Create your views here.
+import time
 
+# Create your views here.
 dbrefreshed = False
 
 def homepage(request):
@@ -140,8 +140,7 @@ def share_analysis(request, r_code):
     ori_data = tmd.OriginalTradeData.objects.filter(code = r_code)
     r_name = ori_data[0].name
     note = tmd.Note.objects.filter(t_name = r_name)
-    note = note.filter(t_type = "个股趋势")
-    note = note.order_by('-t_date','-t_stamp')
+    note = note.filter(t_type = "趋势分析")
     data = {}
     data['r_code'] = r_code
     data['r_name'] = r_name

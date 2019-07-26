@@ -2,6 +2,11 @@ from . import models as tmd
 from datetime import datetime
 from django.http import JsonResponse
 from . import dbtools
+
+import sys
+sys.path.append("..")
+from tools import share_statistic
+
 def delete_note(request):
     data = {}
     try:
@@ -100,3 +105,21 @@ def trade_data_json(request):
     for i in stat_data:
         stat_list.append([i.code,i.name,str(i.i_date),str(i.o_date),i.i_total,i.time,i.earning,i.pct])
     return JsonResponse(stat_list, safe=False)
+    
+    
+def trend_data_json(request, r_code):
+    trendData = share_statistic.Share(r_code, 'W', '1995-05-18', '2019-07-06')
+    trendData.setJudgeCondition(4, 4, 15, -4, 4, -15)
+    trendData.statistic()
+    
+    data_list = {}
+    
+    data_list['qfqData'] = []
+    for i in trendData.oriData.index:
+        data_list['qfqData'].append([trendData.oriData.date[i], trendData.oriData.open[i], trendData.oriData.close[i], trendData.oriData.high[i], trendData.oriData.low[i], trendData.oriData.volume[i]])
+
+    data_list['trendData'] = []
+    for i in trendData.trendData.index:
+        data_list['trendData'].append([trendData.trendData.start_date[i], trendData.trendData.end_date[i], trendData.trendData.open[i], trendData.trendData.close[i], trendData.trendData.pct[i], int(trendData.trendData.last_weeks[i])])
+
+    return JsonResponse(data_list, safe=False)

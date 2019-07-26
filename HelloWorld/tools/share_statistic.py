@@ -5,8 +5,15 @@ Spyder Editor
 This is a temporary script file.
 """
 import tushare as ts
-import pandas
+import pandas,os
 
+def use_proxy():
+    HTTP_PROXY = "http_proxy"
+    HTTPS_PROXY = "https_proxy"
+    os.environ[HTTP_PROXY] = "cn-proxy.jp.oracle.com:80"
+    os.environ[HTTPS_PROXY] = "cn-proxy.jp.oracle.com:80"
+    print (os.environ["http_proxy"])
+    print (os.environ["https_proxy"])
 
 def kp2dig(number):
     # 范围两位小数百分比
@@ -37,7 +44,7 @@ class Share:
             self.timeUnit = '月'
 
     def setJudgeCondition(self, upStartPct, upLastTimes, upPct, downStartPct, downLastTimes, downPct):
-        # 上涨，下跌开始判定涨跌比百分率
+        # 上涨，下跌开始判定涨跌比百分率，持续时间，合格百分比
         # 上涨，下跌微创新低则结束的判定周期次数
         self.upStartPct = upStartPct
         self.upLastTimes = upLastTimes
@@ -49,12 +56,13 @@ class Share:
     def get_bas_dat(self, data):
 
         # 从初始数据中提取每周日期，收盘价，涨跌幅
-        dataBas = {'date': [], 'open': [], 'close': [], 'pct_chg': []}
+        dataBas = {'date': [], 'open': [], 'close': [], 'pct_chg': [], 'volume': []}
         pct_chg = data.close.pct_change()
         dataBas['date'].append(data.date[0])
         dataBas['close'].append(float(data.close[0]))
         dataBas['open'].append(float(data.open[0]))
         dataBas['pct_chg'].append(pct_chg[0])
+        dataBas['volume'].append(data.volume[0])
 
         for i in range(len(data) - 1):
             dataBas['date'].append(data.date[i + 1])
@@ -62,8 +70,10 @@ class Share:
             dataBas['open'].append(float(data.open[i + 1]))
             pct = float(pct_chg[i + 1])
             dataBas['pct_chg'].append(kp2dig(pct))
+            dataBas['volume'].append(data.volume[i + 1])
 
-        return pandas.DataFrame(dataBas)
+        t = pandas.DataFrame(dataBas)
+        return t.fillna(0)
 
         # 统计上涨或下跌的趋势维持的时长
 
@@ -140,11 +150,11 @@ class Share:
         return pandas.DataFrame(trendData)[order]
 
     def gen_ris_sta(self):
-
+        # 对于上升趋势的总体统计
         data = self.basData
         trendData = self.trendData[self.trendData.pct > 0]
 
-        # 对于上升趋势的总体统计
+
 
         result = ''
         result += '统计时间' + data.date[0] + '~' + data.date[len(data) - 1] + ':\n' + '\n'
@@ -178,12 +188,12 @@ class Share:
         # 根据统计，上涨幅度增加的可能性
         result += '上涨幅度 >= ' + str(pct) + '% 的概率: ' + str(
             kp2dig(len(trendData[trendData.pct >= pct]) / len(trendData))) + ' %' + '\n'
-        # result += str(trendData[trendData.pct >= pct ]) + '\n'
+        result += str(trendData[trendData.pct >= pct ]) + '\n'
 
         # 根据统计，上涨时长增加的可能性
         result += '上涨时长 >= ' + str(time) + self.timeUnit + ': ' + str(
             kp2dig(len(trendData[trendData.last_weeks >= time]) / len(trendData))) + ' %' + '\n'
-        # result += str(trendData[trendData.last_weeks >= time ]) + '\n'
+        result += str(trendData[trendData.last_weeks >= time ]) + '\n'
 
         # 上涨猛烈程度评判
         result += str(time) + self.timeUnit + '内上涨幅度 >= ' + str(pct) + '%的概率: ' + str(
@@ -229,7 +239,7 @@ class Share:
         result = '形成的趋势中'
 
         # 根据统计，下跌幅度扩大的可能性
-        result += '下跌幅度 <= ' + str(pct) + '% 的概率: ' + str(
+        result += '幅度:下跌幅度 <= ' + str(pct) + '% 的概率: ' + str(
             kp2dig(len(trendData[trendData.pct <= pct]) / len(trendData))) + ' %' + '\n'
         result += str(trendData[trendData.pct < pct]) + '\n'
 
@@ -271,8 +281,8 @@ class Share:
 
 
     def statistic(self):
-        self.oriData = ts.get_k_data(self.code, ktype=self.kType, autype='qfq', index=False, start=self.startDate,
-                                     end=self.endDate)
+        self.oriData = ts.get_k_data(self.code, ktype = self.kType, autype = 'qfq', index = False, start = self.startDate,
+                                     end = self.endDate)
         self.oriData.index = self.oriData.index - self.oriData.index[0]
         self.basData = self.get_bas_dat(self.oriData)
         self.trendData = self.get_trend_prd(self.basData)
@@ -280,18 +290,20 @@ class Share:
 
 
 if __name__ == '__main__':
-    Index = Share('sz', 'M', '1995-05-18', '2019-07-06')
+    use_proxy()
+
+    Index = Share('002583', 'W', '1995-05-18', '2019-07-06')
 
     # 上证指数的周线系数可用度较高
     # Index.setJudgeCondition(1, 4, 5, -1, 4, -5)
 
-    Index.setJudgeCondition(1, 4, 5, -1, 4, -5)
+    Index.setJudgeCondition(4, 4, 15, -4, 4, -15)
     Index.statistic()
     Index.gen_ris_sta()
     Index.gen_down_sta()
 
     Index.gen_ris_trend(37, 9)
-    Index.gen_down_trend(-17.5, 9)
+    Index.gen_down_trend(-40, 9)
     Index.volatility()
-    Index.volatilityData.plot.bar(x='pct_chg', y='num')
+    Index.volatilityData.plot.bar(x = 'pct_chg', y = 'num')
 

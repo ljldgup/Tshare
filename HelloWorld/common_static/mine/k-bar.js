@@ -2,37 +2,6 @@
 /*基于准备好的dom，初始化echarts实例*/
 var myChart = echarts.init(document.getElementById('main'));
 
-
-//是否有日期参数，没有则显示全部范围
-var url = self.location.href;
-var url_param;
-var r_code = url.split('/')[4]
-
-// 数据意义：开盘(open)，收盘(close)，最低(lowest)，最高(highest)
-//从json中获取数据
-var rData = []
-
-$.ajaxSetup({async:false});
-$.getJSON("/k_data_json/" + r_code + "/", function(data){
-    rData = data;
-})
-
-var detailData = []
-$.getJSON("/ori_trade_data_json/?r_code=" + r_code , function(data){
-    detailData = data;
-})
-
-var markData=[]
-detailData.forEach(function(oriData){
-    tmpData={}
-    tmpData.name = oriData[1];
-    tmpData.coord = [oriData[0], oriData[3]];
-    tmpData.value = oriData[2];
-    if(tmpData.value < 0) tmpData.itemStyle = {color:'rgb(0,128,0)'}
-    else tmpData.itemStyle = {color:'rgb(128,0,0)'}
-    markData.push(tmpData)
-})
-
 var r_name = $('#title').text().split("(")[0];
 
 //切割数组，把数组中的日期和数据分离，返回数组中的日期和数据
@@ -48,38 +17,27 @@ function splitData(rawData) {
     return {
         categoryData: categoryData,
         values: values,
-        volumns: volumns
+        volumns: volumns,
+        //四种振幅
+        pct_data1 : calculatePct(1, values),
+        pct_data2 : calculatePct(2, values),
+        pct_data3 : calculatePct(3, values),
+        pct_data4 : calculatePct(4 ,values)
     };
 }
 
+// rawData数据意义：开盘(open)，收盘(close)，最低(lowest)，最高(highest)
+//从json中获取数据
+
 var data0 = splitData(rData);
 
-//计算MA平均线，N日移动平均线=N日收盘价之和/N  dayCount要计算的天数(5,10,20,30)
-function calculateMA(dayCount) {
-    var result = [];
-    for (var i = 0, len = data0.values.length; i < len; i++) {
-        if (i < dayCount) {
-            result.push('-');
-            //alert(result);
-            continue;   //结束单次循环，即不输出本次结果
-        }
-        var sum = 0;
-        for (var j = 0; j < dayCount; j++) {
-            //收盘价总和
-            sum += data0.values[i - j][1];
-            //alert(sum);
-        }
-        result.push(sum / dayCount);
-       // alert(result);
-    }
-    return result;
-}
+
 //计算涨幅等百分比数据
-function calculatePct(type) {
+function calculatePct(type, values) {
     var pct = [];
     var tmp
     
-    for (var i = 0, len = data0.values.length; i < len; i++) {
+    for (var i = 0, len = values.length; i < len; i++) {
     
         if (i < 1) {
             pct.push('-');
@@ -91,20 +49,20 @@ function calculatePct(type) {
             {
                 //涨幅
                 case 1:
-                    tmp = ((data0.values[i][1] - data0.values[i-1][1]) / data0.values[i-1][1]*100).toFixed(2);
+                    tmp = ((values[i][1] - values[i-1][1]) / values[i-1][1]*100).toFixed(2);
                     break;
                 //振幅
                 case 2:
-                    tmp = ((data0.values[i][3] - data0.values[i][2]) / data0.values[i-1][1]*100).toFixed(2)  
+                    tmp = ((values[i][3] - values[i][2]) / values[i-1][1]*100).toFixed(2)  
                     break;
 
                 //最高点
                 case 3:
-                    tmp = ((data0.values[i][3] - data0.values[i-1][1]) / data0.values[i-1][1]*100).toFixed(2);
+                    tmp = ((values[i][3] - values[i-1][1]) / values[i-1][1]*100).toFixed(2);
                     break;
                 //最低点
                 case 4:
-                    tmp = ((data0.values[i][2] - data0.values[i-1][1]) / data0.values[i-1][1]*100).toFixed(2);
+                    tmp = ((values[i][2] - values[i-1][1]) / values[i-1][1]*100).toFixed(2);
                     break;
                 default:
                     tmp = '-';
@@ -117,11 +75,39 @@ function calculatePct(type) {
     return pct;
 }
 
-//四种涨幅
-var pct_data1 = calculatePct(1);
-var pct_data2 = calculatePct(2);
-var pct_data3 = calculatePct(3);
-var pct_data4 = calculatePct(4);
+
+
+//输出涨跌幅振幅
+function calculateLatitude(params){
+    param = params[0];
+    var tmp = '日期: ' + param.name + '<hr size=1 style="margin: 3px 0">'
+    
+    //引入成交量后，两个图显示不一致，所以使用全局变量
+    tmp += '开盘: ' + data0.values[param.dataIndex][0] + '<br/>'
+    tmp += '收盘: ' + data0.values[param.dataIndex][1] + '<br/>'
+
+    //这个函数是在外部调用的所以要写option
+    if (data0.pct_data1[param.dataIndex] > 0 ) {
+            tmp += '涨幅: <span style="color:red">' + data0.pct_data1[param.dataIndex] + '&#37;</span><br/>'; 
+          } else {
+            tmp += '涨幅: <span style="color:green">' + data0.pct_data1[param.dataIndex] + '&#37;</span><br/>';
+    };
+    tmp +='<hr size=1 style="margin: 3px 0">'
+    tmp += '振幅: ' + data0.pct_data2[param.dataIndex] + '&#37;<br/>';
+    
+    if (data0.pct_data3[param.dataIndex] > 0 ) {
+            tmp += '最高: <span style="color:red">' + data0.pct_data3[param.dataIndex] + '&#37;</span><br/>'; 
+          } else {
+            tmp += '最高: <span style="color:green">' + data0.pct_data3[param.dataIndex] + '&#37;</span><br/>';
+    };
+    
+    if (data0.pct_data4[param.dataIndex] > 0 ) {
+            tmp += '最低: <span style="color:red">' + data0.pct_data4[param.dataIndex] + '&#37;</span><br/>'; 
+          } else {
+            tmp += '最低: <span style="color:green">' + data0.pct_data4[param.dataIndex] + '&#37;</span><br/>';
+    };
+    return tmp;
+}
 
 option = {
     title: {    //标题
@@ -224,7 +210,7 @@ option = {
                 normal: {
                     color: function(params) {
                         var colorList;
-                        if (this.pct_data1[params.dataIndex] > 0 ) {
+                        if (data0.pct_data1[params.dataIndex] > 0 ) {
                             colorList = '#ef232a';
                         } else {
                             colorList = '#14b143';
@@ -239,7 +225,7 @@ option = {
 
 if ( $('#title').text().indexOf("交易") > 0 ){
     
-    option.tooltip.formatter = calculateEarning;
+    option.tooltip.formatter = param => (calculateLatitude(param) + calculateEarning(param));
     
     option.legend.data = ['日K', 'MA10', 'MA20', 'MA60'];
     
@@ -278,7 +264,14 @@ if ( $('#title').text().indexOf("交易") > 0 ){
     
 }
 
-if ( $('#title').text().indexOf("趋势") > 0 ){
+if ( $('#title').text().indexOf("分析") > 0 ){
+    
+    option.tooltip.formatter = calculateLatitude;
+    option.dataZoom.forEach(function(zoom){
+        var date = new Date();
+        zoom.start = 100 < rData.length ? 100 -  100/rData.length * 100 : 1;
+        zoom.end = 100 ;
+    });
     option.series[0].markLine = getTrendMarkLine();
 }
 
