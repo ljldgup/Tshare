@@ -18,7 +18,6 @@ from HelloWorld import settings
 #url = 'mysql+pymysql://ljl:123123@localhost:3306/django_test?charset=utf8'
 #url= 'sqlite:///'+settings.DATABASES['default']['NAME']
 
-
 if('sqlite' in settings.DATABASES['default']['ENGINE']):
 	url= 'sqlite:///' + settings.DATABASES['default']['NAME']
 else:
@@ -42,13 +41,23 @@ def refresh_k_data(table,my_conn = yconnect):
         print(e)
 
 #check if code's k data exists
-def storekdata(code,my_conn = yconnect):
+def storekdata(code, my_conn = yconnect):
+    #部分指数不能直接使用代码
+    indexTable = {}
+    indexTable['000001'] = 'sh'
+    indexTable['600001'] = 'sz'
+    indexTable['399006'] = 'cyb'
     data = pd.read_sql_query('select * from k_bfq where code = ' + code + ';', con = my_conn)
-	
+    
     if (len(data) == 0):
-        data1 = ts.get_k_data(code, ktype='D', autype=None ,index=False,start='2015-07-06', end=time.strftime('%Y-%m-%d',time.localtime(time.time())))
+        if code in indexTable:
+            data1 = ts.get_k_data(indexTable[code], ktype='D', autype=None, index=False, start='2015-07-06', end=time.strftime('%Y-%m-%d',time.localtime(time.time())))
+            data1['code'] = code
+        else:
+            data1 = ts.get_k_data(code, ktype='D', autype=None, index=False, start='2015-07-06', end=time.strftime('%Y-%m-%d',time.localtime(time.time())))
+       
         data1['id'] = data1.index - data1.index.min()
-        data1.to_sql('k_bfq', con=my_conn, if_exists='append')
+        data1.to_sql('k_bfq', con = my_conn, if_exists='append')
         time.sleep(0.1)
     else:
         print(code + ':already in database')

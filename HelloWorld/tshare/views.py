@@ -136,9 +136,16 @@ def delete_note(request):
 
 
 def share_analysis(request, r_code):
+    index_table = {}
+    index_table['000001'] = '上证指数'
+    index_table['600001'] = '深成指数'
+    index_table['399006'] = '创业板指'
     dbtools.storekdata(r_code)
-    ori_data = tmd.OriginalTradeData.objects.filter(code = r_code)
-    r_name = ori_data[0].name
+    if r_code in index_table:
+        r_name = index_table[r_code]
+    else:
+        ori_data = tmd.OriginalTradeData.objects.filter(code = r_code)
+        r_name = ori_data[0].name
     note = tmd.Note.objects.filter(t_name = r_name)
     note = note.filter(t_type = "趋势分析")
     data = {}

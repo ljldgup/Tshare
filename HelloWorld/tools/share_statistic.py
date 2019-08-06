@@ -67,6 +67,10 @@ class Share:
         self.oriData = ts.get_k_data(self.code, ktype = self.kType, autype = 'qfq', index = False,
                                      start = self.startDate, end = self.endDate)
         self.oriData.index = self.oriData.index - self.oriData.index[0]
+
+
+
+
         data = self.oriData
 
         # 从初始数据中提取每周日期，收盘价，涨跌幅
@@ -384,7 +388,7 @@ class Share:
 
 
 if __name__ == '__main__':
-    #use_proxy()
+    use_proxy()
 
     Index = Share('sh', 'W', '2005-05-18', '2019-07-06')
 
