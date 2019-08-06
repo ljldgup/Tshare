@@ -43,6 +43,14 @@ class Share:
         else:
             self.timeUnit = '月'
 
+        #默认上涨下跌判断条件
+        self.upStartPct = 1
+        self.upLastTimes = 1
+        self.upPct = 15
+        self.downStartPct = 1
+        self.downLastTimes = 1
+        self.downPct = 15
+
     def setJudgeCondition(self, upStartPct, upLastTimes, upPct, downStartPct, downLastTimes, downPct):
         # 上涨，下跌开始判定涨跌比百分率，持续时间，合格百分比
         # 上涨，下跌微创新低则结束的判定周期次数
@@ -53,7 +61,13 @@ class Share:
         self.downLastTimes = downLastTimes
         self.downPct = downPct
 
-    def getBasDat(self, data):
+    #获取原始数据self.oriData, 经过加工的基本数据self.basData
+    def getBasDat(self):
+        #获取原始数据
+        self.oriData = ts.get_k_data(self.code, ktype = self.kType, autype = 'qfq', index = False,
+                                     start = self.startDate, end = self.endDate)
+        self.oriData.index = self.oriData.index - self.oriData.index[0]
+        data = self.oriData
 
         # 从初始数据中提取每周日期，收盘价，涨跌幅
         dataBas = {'date': [], 'open': [], 'close': [], 'pctChg': [], 'volume': []}
@@ -73,10 +87,11 @@ class Share:
             dataBas['volume'].append(data.volume[i + 1])
 
         t = pandas.DataFrame(dataBas)
-        return t.fillna(0)
-        # 统计上涨或下跌的趋势维持的时长
+        self.basData = t.fillna(0)
+        return self.basData
 
-    # 返回结束的Index
+    # 统计上涨或下跌的趋势维持的时长
+    # 返回结束的Index，如果不合格则返回值与输入相同
     def trendJudge(self, data, begIndex):
 
         beginPct = data.pctChg[begIndex]
@@ -111,7 +126,11 @@ class Share:
 
         return peakIndex
 
-    def getTrendPrd(self, data):
+    #从基本数据self.basData提取趋势数据 self.trendData
+    def getTrendPrd(self):
+
+        data = self.basData
+
         # 提取上升下降趋势的维持时间，涨幅
         # 开始时间，上升幅度，持续周数
         trendData = {'startDate': [], 'endDate': [], 'pct': [], 'lastWeeks': [], 'open': [], 'close': [], 'beginIndex': [], 'endIndex': []}
@@ -149,31 +168,28 @@ class Share:
 
         # 调整一下列名顺序，DateFrame创建时列名按字母排序
         order = ['startDate', 'endDate', 'pct', 'lastWeeks', 'open', 'close', 'beginIndex', 'endIndex']
-        return pandas.DataFrame(trendData)[order]
+        self.trendData = pandas.DataFrame(trendData)[order]
 
     def getSecondaryTrendData(self):
+
+        trendData = self.trendData
         #取得回调,反弹
-        
         #次级折返趋势
         #spacePct折返幅度占之前的比例
         #timePct折返持续时间占之前的比例
         secondaryTrendData = {'startDate': [], 'endDate': [], 'lastWeeks': [], 'pct': [], 'spacePct': [], 'timePct': []}
-        
+
         #合并趋势
         mergedTrendData = {'startDate': [], 'endDate': [], 'pct': [], 'lastWeeks': [], 'open': [], 'close': []}
 
-        risTrendData = self.trendData[self.trendData.pct > 0]
-        downTrendData = self.trendData[self.trendData.pct > 0]
+        risTrendData = trendData[trendData.pct > 0]
+        downTrendData = trendData[trendData.pct < 0]
 
+        #回调统计
         flag = 0
-        former = 0
-        last = 0
         for index in risTrendData.index:
-            print(index)
-            print(former)
-            print(last)
-            print()
             if flag == 0 :
+                #开始，上一个
                 former = index
                 last = index
                 flag = 1
@@ -184,7 +200,7 @@ class Share:
                 secondaryTrendData['endDate'].append(risTrendData.startDate[index])
                 secondaryTrendData['lastWeeks'].append(risTrendData.beginIndex[index] - risTrendData.endIndex[last])
                 secondaryTrendData['pct'].append(kp2dig((risTrendData.close[last] - risTrendData.close[index]) / risTrendData.close[last]))
-                secondaryTrendData['spacePct'].append(kp2dig((risTrendData.close[last] - risTrendData.close[index]) / (risTrendData.close[last] - risTrendData.open[last])))
+                secondaryTrendData['spacePct'].append(kp2dig((risTrendData.close[last] - risTrendData.open[index]) / (risTrendData.close[last] - risTrendData.open[last])))
                 secondaryTrendData['timePct'].append(kp2dig((risTrendData.beginIndex[index] - risTrendData.endIndex[last]) / risTrendData.lastWeeks[last]))
                 last = index
 
@@ -192,19 +208,42 @@ class Share:
                 mergedTrendData['startDate'].append(risTrendData.startDate[former])
                 mergedTrendData['endDate'].append(risTrendData.endDate[last])
                 mergedTrendData['lastWeeks'].append(risTrendData.endIndex[last] - risTrendData.beginIndex[former])
-                mergedTrendData['pct'].append(kp2dig((risTrendData.close[last] - risTrendData.close[former])/risTrendData.close[former]))
+                mergedTrendData['pct'].append(kp2dig((risTrendData.close[last] - risTrendData.open[former])/risTrendData.open[former]))
                 mergedTrendData['open'].append(risTrendData.open[former])
                 mergedTrendData['close'].append(risTrendData.close[last])
                 former = index
                 last = index
-        
-        
-        pSecondaryTrendData = pandas.DataFrame(secondaryTrendData)[['startDate', 'endDate', 'lastWeeks', 'pct', 'spacePct', 'timePct']]
-        pMergedTrendData = pandas.DataFrame(mergedTrendData)[['startDate', 'endDate', 'pct', 'lastWeeks', 'open', 'close']]
-        
-        return [pSecondaryTrendData, pMergedTrendData]
 
+        #反弹统计
+        flag = 0
+        for index in downTrendData.index:
+            if flag == 0 :
+                former = index
+                last = index
+                flag = 1
 
+            elif (downTrendData.close[index] < downTrendData.close[last]
+                and downTrendData.open[index] <= downTrendData.open[last]):
+                secondaryTrendData['startDate'].append(downTrendData.endDate[last])
+                secondaryTrendData['endDate'].append(downTrendData.startDate[index])
+                secondaryTrendData['lastWeeks'].append(downTrendData.beginIndex[index] - downTrendData.endIndex[last])
+                secondaryTrendData['pct'].append(kp2dig((downTrendData.close[last] - downTrendData.close[index]) / downTrendData.close[last]))
+                secondaryTrendData['spacePct'].append(kp2dig((downTrendData.close[last] - downTrendData.open[index]) / (downTrendData.close[last] - downTrendData.open[last])))
+                secondaryTrendData['timePct'].append(kp2dig((downTrendData.beginIndex[index] - downTrendData.endIndex[last]) / downTrendData.lastWeeks[last]))
+                last = index
+
+            else:
+                mergedTrendData['startDate'].append(downTrendData.startDate[former])
+                mergedTrendData['endDate'].append(downTrendData.endDate[last])
+                mergedTrendData['lastWeeks'].append(downTrendData.endIndex[last] - downTrendData.beginIndex[former])
+                mergedTrendData['pct'].append(kp2dig((downTrendData.close[last] - downTrendData.open[former])/downTrendData.open[former]))
+                mergedTrendData['open'].append(downTrendData.open[former])
+                mergedTrendData['close'].append(downTrendData.close[last])
+                former = index
+                last = index
+
+        self.secondaryTrendData = pandas.DataFrame(secondaryTrendData)[['startDate', 'endDate', 'lastWeeks', 'pct', 'spacePct', 'timePct']]
+        self.mergedTrendData = pandas.DataFrame(mergedTrendData)[['startDate', 'endDate', 'pct', 'lastWeeks', 'open', 'close']]
 
     def genRisSta(self):
         # 对于上升趋势的总体统计
@@ -311,6 +350,7 @@ class Share:
         print('-------------------------------------------------------------------------------')
         print(result)
 
+    #对个股的涨跌幅分布的统计
     def volatility(self):
         latitude = max(self.basData.pctChg.max(), abs(self.basData.pctChg.min()))
         latitude = int(latitude) + 1
@@ -336,11 +376,10 @@ class Share:
 
 
     def statistic(self):
-        self.oriData = ts.get_k_data(self.code, ktype = self.kType, autype = 'qfq', index = False, start = self.startDate,
-                                     end = self.endDate)
-        self.oriData.index = self.oriData.index - self.oriData.index[0]
-        self.basData = self.getBasDat(self.oriData)
-        self.trendData = self.getTrendPrd(self.basData)
+
+        self.getBasDat()
+        self.getTrendPrd()
+        self.getSecondaryTrendData()
         # self.genRisSta()
 
 
@@ -350,17 +389,16 @@ if __name__ == '__main__':
     Index = Share('sh', 'W', '2005-05-18', '2019-07-06')
 
     # 上证指数的周线系数可用度较高
-    Index.setJudgeCondition(1, 4, 5, -1, 4, -5)
+    Index.setJudgeCondition(1, 2, 6, -1, 2, -6)
 
     # Index.setJudgeCondition(1, 2, 15, -1, 2, -15)
     Index.statistic()
-    # Index.genRisSta()
-    # Index.genDownSta()
+    #Index.genRisSta()
+    #Index.genDownSta()
 
-    #Index.genRisTrend(20, 9)
-    #Index.genDownTrend(-10, 9)
+    Index.genRisTrend(20, 9)
+    Index.genDownTrend(-10, 9)
     #Index.volatility()
     #Index.volatilityData.plot.bar(x = 'pctChg', y = 'num')
-    
-    Index.getSecondaryTrendData()
+
 

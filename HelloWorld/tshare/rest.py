@@ -120,6 +120,6 @@ def trend_data_json(request, r_code):
 
     data_list['trendData'] = []
     for i in trendData.trendData.index:
-        data_list['trendData'].append([trendData.trendData.start_date[i], trendData.trendData.end_date[i], trendData.trendData.open[i], trendData.trendData.close[i], trendData.trendData.pct[i], int(trendData.trendData.last_weeks[i])])
+        data_list['trendData'].append([trendData.trendData.startDate[i], trendData.trendData.endDate[i], trendData.trendData.open[i], trendData.trendData.close[i], trendData.trendData.pct[i], int(trendData.trendData.lastWeeks[i])])
 
     return JsonResponse(data_list, safe=False)
