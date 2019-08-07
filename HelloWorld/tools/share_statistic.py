@@ -68,11 +68,7 @@ class Share:
                                      start = self.startDate, end = self.endDate)
         self.oriData.index = self.oriData.index - self.oriData.index[0]
 
-
-
-
         data = self.oriData
-
         # 从初始数据中提取每周日期，收盘价，涨跌幅
         dataBas = {'date': [], 'open': [], 'close': [], 'pctChg': [], 'volume': []}
         pctChg = data.close.pct_change()
@@ -390,7 +386,7 @@ class Share:
 if __name__ == '__main__':
     use_proxy()
 
-    Index = Share('sh', 'W', '2005-05-18', '2019-07-06')
+    Index = Share('sh', 'W', '2005-05-18', '2019-09-06')
 
     # 上证指数的周线系数可用度较高
     Index.setJudgeCondition(1, 2, 6, -1, 2, -6)

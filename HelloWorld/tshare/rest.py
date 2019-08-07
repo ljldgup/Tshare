@@ -108,7 +108,7 @@ def trade_data_json(request):
     
     
 def trend_data_json(request, r_code):
-    trendData = share_statistic.Share(r_code, 'W', '1995-05-18', '2019-07-06')
+    trendData = share_statistic.Share(r_code, 'W', '1995-05-18', datetime.now().strftime('%Y-%m-%d'))
     trendData.setJudgeCondition(4, 4, 15, -4, 4, -15)
     trendData.statistic()
     
