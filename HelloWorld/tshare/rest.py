@@ -108,18 +108,38 @@ def trade_data_json(request):
     
     
 def trend_data_json(request, r_code):
-    trendData = share_statistic.Share(r_code, 'W', '1995-05-18', datetime.now().strftime('%Y-%m-%d'))
-    trendData.setJudgeCondition(4, 4, 15, -4, 4, -15)
-    trendData.statistic()
-    
+    share = share_statistic.Share(r_code, 'W', '1995-05-18', datetime.now().strftime('%Y-%m-%d'))
+
+    if r_code == 'sh' or r_code == 'sz' or r_code == 'cyb' :
+        #深沪，创业板
+        share.setJudgeCondition(1, 4, 8, -1, 4, -8)
+    else:
+        share.setJudgeCondition(4, 4, 15, -4, 4, -15)
+            
+    share.statistic()
     data_list = {}
     
+    oriData = share.oriData
+    trendData = share.trendData
+    secondaryTrendData = share.secondaryTrendData
+    mergedTrendData = share.mergedTrendData
+    
     data_list['qfqData'] = []
-    for i in trendData.oriData.index:
-        data_list['qfqData'].append([trendData.oriData.date[i], trendData.oriData.open[i], trendData.oriData.close[i], trendData.oriData.high[i], trendData.oriData.low[i], trendData.oriData.volume[i]])
+    for i in oriData.index:
+        data_list['qfqData'].append([oriData.date[i], oriData.open[i], oriData.close[i], oriData.high[i], oriData.low[i], oriData.volume[i]])
 
     data_list['trendData'] = []
-    for i in trendData.trendData.index:
-        data_list['trendData'].append([trendData.trendData.startDate[i], trendData.trendData.endDate[i], trendData.trendData.open[i], trendData.trendData.close[i], trendData.trendData.pct[i], int(trendData.trendData.lastWeeks[i])])
+    for i in trendData.index:
+        data_list['trendData'].append([trendData.startDate[i], trendData.endDate[i], trendData.open[i], trendData.close[i], trendData.pct[i], int(trendData.lastWeeks[i])])
 
+    data_list['secondaryTrendData'] = []
+    for i in secondaryTrendData.index:
+        data_list['secondaryTrendData'].append([secondaryTrendData.startDate[i], secondaryTrendData.endDate[i], secondaryTrendData.open[i],
+            secondaryTrendData.close[i], secondaryTrendData.pct[i], int(trendData.lastWeeks[i]), secondaryTrendData.spacePct[i], secondaryTrendData.timePct[i]])
+
+    data_list['mergedTrendData'] = []
+    for i in mergedTrendData.index:
+        data_list['mergedTrendData'].append([mergedTrendData.startDate[i], mergedTrendData.endDate[i], 
+            mergedTrendData.open[i], mergedTrendData.close[i], mergedTrendData.pct[i], int(mergedTrendData.lastWeeks[i])])
+    
     return JsonResponse(data_list, safe=False)

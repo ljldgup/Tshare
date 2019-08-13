@@ -177,7 +177,7 @@ class Share:
         #次级折返趋势
         #spacePct折返幅度占之前的比例
         #timePct折返持续时间占之前的比例
-        secondaryTrendData = {'startDate': [], 'endDate': [], 'lastWeeks': [], 'pct': [], 'spacePct': [], 'timePct': []}
+        secondaryTrendData = {'startDate': [], 'endDate': [], 'lastWeeks': [], 'pct': [], 'spacePct': [], 'timePct': [], 'open': [], 'close': []}
 
         #合并趋势
         mergedTrendData = {'startDate': [], 'endDate': [], 'pct': [], 'lastWeeks': [], 'open': [], 'close': []}
@@ -202,6 +202,8 @@ class Share:
                 secondaryTrendData['pct'].append(kp2dig((risTrendData.close[last] - risTrendData.close[index]) / risTrendData.close[last]))
                 secondaryTrendData['spacePct'].append(kp2dig((risTrendData.close[last] - risTrendData.open[index]) / (risTrendData.close[last] - risTrendData.open[last])))
                 secondaryTrendData['timePct'].append(kp2dig((risTrendData.beginIndex[index] - risTrendData.endIndex[last]) / risTrendData.lastWeeks[last]))
+                secondaryTrendData['open'].append(risTrendData.close[last])
+                secondaryTrendData['close'].append(risTrendData.open[index])
                 last = index
 
             else:
@@ -209,8 +211,8 @@ class Share:
                 mergedTrendData['endDate'].append(risTrendData.endDate[last])
                 mergedTrendData['lastWeeks'].append(risTrendData.endIndex[last] - risTrendData.beginIndex[former])
                 mergedTrendData['pct'].append(kp2dig((risTrendData.close[last] - risTrendData.open[former])/risTrendData.open[former]))
-                mergedTrendData['open'].append(risTrendData.open[former])
-                mergedTrendData['close'].append(risTrendData.close[last])
+                mergedTrendData['open'].append(risTrendData.close[former])
+                mergedTrendData['close'].append(risTrendData.open[last])
                 former = index
                 last = index
 
@@ -230,6 +232,8 @@ class Share:
                 secondaryTrendData['pct'].append(kp2dig((downTrendData.close[last] - downTrendData.close[index]) / downTrendData.close[last]))
                 secondaryTrendData['spacePct'].append(kp2dig((downTrendData.close[last] - downTrendData.open[index]) / (downTrendData.close[last] - downTrendData.open[last])))
                 secondaryTrendData['timePct'].append(kp2dig((downTrendData.beginIndex[index] - downTrendData.endIndex[last]) / downTrendData.lastWeeks[last]))
+                secondaryTrendData['open'].append(downTrendData.close[last])
+                secondaryTrendData['close'].append(downTrendData.open[index])
                 last = index
 
             else:
@@ -242,7 +246,7 @@ class Share:
                 former = index
                 last = index
 
-        self.secondaryTrendData = pandas.DataFrame(secondaryTrendData)[['startDate', 'endDate', 'lastWeeks', 'pct', 'spacePct', 'timePct']]
+        self.secondaryTrendData = pandas.DataFrame(secondaryTrendData)[['startDate', 'endDate', 'pct', 'lastWeeks', 'open', 'close','spacePct', 'timePct']]
         self.mergedTrendData = pandas.DataFrame(mergedTrendData)[['startDate', 'endDate', 'pct', 'lastWeeks', 'open', 'close']]
 
     def genRisSta(self):
