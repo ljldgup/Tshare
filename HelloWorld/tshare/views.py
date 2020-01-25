@@ -136,13 +136,6 @@ def delete_note(request):
 
 
 def share_analysis(request, r_code):
-    dbtools.storekdata(r_code)
-    ori_data = tmd.OriginalTradeData.objects.filter(code = r_code)
-    r_name = ori_data[0].name
-    note = tmd.Note.objects.filter(t_name = r_name)
-    note = note.filter(t_type = "趋势分析")
     data = {}
     data['r_code'] = r_code
-    data['r_name'] = r_name
-    data['note'] = note
     return render(request, 'tshare/share_analysis.html',data)
