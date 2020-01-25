@@ -4,10 +4,10 @@ Created on Sun Aug  5 00:18:51 2018
 
 @author: ljl
 """
-import dbtest
+import os,sys
+from . import dbtest
 import pandas as pd
 from sqlalchemy import create_engine
-import os,sys
 sys.path.append("..")
 from HelloWorld import settings
 
@@ -182,9 +182,50 @@ def analysis3(trade_data):
     #st_data2.plot(x = "date",y = "count", kind = "bar",figsize=(16,12))
     return st_data2
 
+
+def storeTrade():
+    df = pd.read_excel(os.path.dirname(__file__) + "/data.xlsx")
+
+    df = df.query('operation == \'证券买入\' or operation == \'证券卖出\'')
+
+    df['date'] = pd.to_datetime(df['date'],format="%Y-%m-%d",errors='raise')
+    df['date'] = df.date.apply(lambda x:x.date())
+    df['date_str'] = df.date.apply(lambda x:str(x))
+    df['code'] = df.code.apply(code_complete)
+    #change 64types
+    for i in df:
+        type_str = str(df[i].dtype)
+        if '64' in type_str:
+            df[i] = df[i].astype(type_str[:-2])
+
+    #remove useless columns
+    for i in range(6):
+        df.drop('useless' + str(i+1), axis=1, inplace=True)
+
+    t_data = get_trade(df)
+
+    t_data1 = analysis_pre(t_data)
+
+    if('sqlite' in settings.DATABASES['default']['ENGINE']):
+        url= 'sqlite:///' + settings.DATABASES['default']['NAME']
+    else:
+        url = 'mysql+pymysql://' + settings.DATABASES['default']['USER'] + ':' + settings.DATABASES['default']['PASSWORD'] + '@localhost:3306/' + settings.DATABASES['default']['NAME'] + '?charset=utf8'
+    yconnect = create_engine(url)
+
+    t_data1['id']= t_data1.index -3
+    t_data1.to_sql("statistic_trade_data",con=yconnect,if_exists='replace')
+
+    df['id']=  df.index
+    df.to_sql("original_trade_data",con=yconnect,if_exists='replace')
+
+    for code in df.code.drop_duplicates():
+        dbtest.storekdata(code,yconnect)
+        break
+
+        
 if __name__ == '__main__':
     #use_proxy()
-    df = pd.read_excel("data.xlsx")
+    df = pd.read_excel(os.path.dirname(__file__) + "/data.xlsx")
 
     df = df.query('operation == \'证券买入\' or operation == \'证券卖出\'')
 
