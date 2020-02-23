@@ -6,6 +6,9 @@ from . import dbtools
 import sys
 sys.path.append("..")
 from tools import share_statistic
+from tools import trade_analysis
+
+dbrefreshed = False
 
 def delete_note(request):
     data = {}
@@ -79,6 +82,11 @@ def ori_trade_data_json(request):
 
 def trade_data_json(request):
 
+    global dbrefreshed
+    if dbrefreshed == False:
+        trade_analysis.storeTrade()
+        dbrefreshed = True
+        
     #store_k_data to tmp table
     stat_data = tmd.StatisticTradeData.objects.all().order_by('o_date')
     

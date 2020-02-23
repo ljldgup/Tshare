@@ -407,15 +407,15 @@ class Share:
         lines['in_trend'] = lines['date'].map(self.in_trend)
 
         print("幅度{}~{}".format(altitude_l, altitude_u))
-        print("上行，大阳 {2:.2f}".format(
+        print("上行，大阳 {0:.2f}".format(
             lines['close'][lines['in_trend'] > 0][lines['pctChg'] > 0].count()/lines['close'].count()))
-        print("上行，大阴 {2:.2f}".format(
+        print("上行，大阴 {0:.2f}".format(
             lines['close'][lines['in_trend'] > 0][lines['pctChg'] < 0].count()/lines['close'].count()))
-        print("下跌，大阳 {2:.2f}".format(
+        print("下跌，大阳 {0:.2f}".format(
             lines['close'][lines['in_trend'] < 0][lines['pctChg'] > 0].count()/lines['close'].count()))
-        print("下跌，大阴 {2:.2f}".format(
+        print("下跌，大阴 {0:.2f}".format(
             lines['close'][lines['in_trend'] < 0][lines['pctChg'] < 0].count()/lines['close'].count()))
-        print("无趋势，大阴 {2:.2f}".format(
+        print("无趋势，大阴 {0:.2f}".format(
             lines['close'][lines['in_trend'] < 0][lines['pctChg'] < 0].count()/lines['close'].count()))
         return lines
 
