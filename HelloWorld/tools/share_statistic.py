@@ -6,7 +6,7 @@ This is a temporary script file.
 """
 import tushare as ts
 import pandas as pd
-import os,datetime
+import os, datetime
 
 
 def use_proxy():
@@ -23,11 +23,13 @@ def kp2dig(number):
     pct = float(number)
     return (int(pct * 10000) / 100.0)
 
+
 def getMonday(endDate):
     datetime.date.today()
     endDate = datetime.datetime.strptime(endDate, "%Y-%m-%d")
     Monday = endDate + datetime.timedelta(days=(0 - endDate.weekday()))
     return Monday.strftime("%Y-%m-%d")
+
 
 class Share:
     # 上行趋势起始判断涨幅，多少个周期数内未创新稿就结束，涨幅
@@ -73,11 +75,11 @@ class Share:
     def getBasDat(self):
         # 获取原始数据
         self.oriDataM = ts.get_k_data(self.code, ktype='M', autype='qfq', index=False,
-                                     start=self.startDate, end=self.endDate)
+                                      start=self.startDate, end=self.endDate)
         self.oriDataW = ts.get_k_data(self.code, ktype='W', autype='qfq', index=False,
-                                     start=self.startDate, end=self.endDate)
+                                      start=self.startDate, end=self.endDate)
         self.oriDataD = ts.get_k_data(self.code, ktype='D', autype='qfq', index=False,
-                                     start=self.startDate, end=self.endDate)
+                                      start=self.startDate, end=self.endDate)
 
         for data in [self.oriDataM, self.oriDataW, self.oriDataD]:
             data['pctChg'] = data['close'].pct_change().fillna(0).map(kp2dig)
@@ -93,7 +95,7 @@ class Share:
         data = self.oriData
         # 从初始数据中提取每周日期，收盘价，涨跌幅
         dataBas = {'date': [], 'open': [], 'close': [], 'pctChg': [], 'volume': []}
-        pctChg =data['close'].pct_change()
+        pctChg = data['close'].pct_change()
         dataBas['date'].append(data.date[0])
         dataBas['close'].append(float(data.close[0]))
         dataBas['open'].append(float(data.open[0]))
@@ -192,8 +194,6 @@ class Share:
         order = ['startDate', 'endDate', 'pct', 'lastWeeks', 'open', 'close', 'beginIndex', 'endIndex']
         self.trendData = pd.DataFrame(trendData)[order]
 
-
-
     def getSecondaryTrendData(self):
 
         trendData = self.trendData
@@ -227,7 +227,7 @@ class Share:
                 secondaryTrendData['pct'].append(
                     kp2dig((risTrendData.close[last] - risTrendData.close[index]) / risTrendData.close[last]))
                 secondaryTrendData['spacePct'].append(kp2dig((risTrendData.close[last] - risTrendData.open[index]) / (
-                            risTrendData.close[last] - risTrendData.open[last])))
+                        risTrendData.close[last] - risTrendData.open[last])))
                 secondaryTrendData['timePct'].append(kp2dig(
                     (risTrendData.beginIndex[index] - risTrendData.endIndex[last]) / risTrendData.lastWeeks[last]))
                 secondaryTrendData['open'].append(risTrendData.close[last])
@@ -261,7 +261,7 @@ class Share:
                 secondaryTrendData['pct'].append(
                     kp2dig((downTrendData.close[last] - downTrendData.close[index]) / downTrendData.close[last]))
                 secondaryTrendData['spacePct'].append(kp2dig((downTrendData.close[last] - downTrendData.open[index]) / (
-                            downTrendData.close[last] - downTrendData.open[last])))
+                        downTrendData.close[last] - downTrendData.open[last])))
                 secondaryTrendData['timePct'].append(kp2dig(
                     (downTrendData.beginIndex[index] - downTrendData.endIndex[last]) / downTrendData.lastWeeks[last]))
                 secondaryTrendData['open'].append(downTrendData.close[last])
@@ -284,6 +284,14 @@ class Share:
         self.mergedTrendData = pd.DataFrame(mergedTrendData)[
             ['startDate', 'endDate', 'pct', 'lastWeeks', 'open', 'close']]
 
+        # 删除mergedTrendData中重叠趋势
+        dropList = []
+        for i in self.mergedTrendData.index:
+            if not self.mergedTrendData[
+                (self.mergedTrendData['startDate'] < self.mergedTrendData['startDate'][i]) &
+                (self.mergedTrendData['endDate'] > self.mergedTrendData['endDate'][i])].empty:
+                dropList.append(i)
+        self.mergedTrendData = self.mergedTrendData.drop(dropList)
 
     def genRisSta(self):
         # 对于上升趋势的总体统计
@@ -391,13 +399,13 @@ class Share:
         print(result)
 
     # 对个股的涨跌幅频率分布的统计
-    def volatility(self, startDate = None, endDate = None):
+    def volatility(self, startDate=None, endDate=None):
         if not startDate:
             startDate = self.startDate
         if not startDate:
             endDate = self.endDate
 
-        #改为使用聚合函数
+        # 改为使用聚合函数
         date = self.basData[(self.basData['date'] >= startDate) &
                             (self.basData['date'] <= endDate)]
 
@@ -405,15 +413,15 @@ class Share:
         cuts = pd.cut(self.basData['pctChg'], range(-10, 11), labels=group_names)
         self.volatilityData = pd.value_counts(cuts)
 
-    #某个日期所在的趋势
+    # 某个日期所在的趋势
     def in_trend(self, date):
         trend = self.mergedTrendData[(self.mergedTrendData['startDay'] <= date) &
-                           (self.mergedTrendData['endDate'] >= date)]
-        #print(trend)
+                                     (self.mergedTrendData['endDate'] >= date)]
+        # print(trend)
         if trend.empty:
             return -1
         else:
-            #这里index已经不是从0开始的正常顺序了，取0会得到key error
+            # 这里index已经不是从0开始的正常顺序了，取0会得到key error
             return trend.index[0]
 
     def kLineAnalysis(self, altitude_l, altitude_u):
@@ -421,36 +429,38 @@ class Share:
                               (self.oriDataD['pctChg'].abs() < altitude_u)]
         lines['trendIndex'] = lines['date'].map(self.in_trend)
         lines = pd.merge(lines[['date', 'close', 'pctChg', 'trendIndex']],
-                         self.mergedTrendData[['startDate', 'endDate', 'pct']],
+                         self.mergedTrendData[['startDay', 'startDate', 'endDate', 'pct']],
                          right_index=True, left_on='trendIndex', how='left')
 
         print("幅度{}~{}, 占趋势比例".format(altitude_l, altitude_u))
         print('所有趋势占比约{0:.2f}%'.format(
-            100*len(lines[lines['trendIndex'] != -1])/(Index.mergedTrendData['lastWeeks'].sum()*5)))
+            100 * len(lines[lines['trendIndex'] != -1]) / (Index.mergedTrendData['lastWeeks'].sum() * 5)))
         print('上行趋势占比约{0:.2f}%'.format(
-            100*len(lines[lines['pct'] > 0])/(Index.mergedTrendData[Index.mergedTrendData['pct'] > 0]['lastWeeks'].sum()*5)))
+            100 * len(lines[lines['pct'] > 0]) / (
+                        Index.mergedTrendData[Index.mergedTrendData['pct'] > 0]['lastWeeks'].sum() * 5)))
         print('下行趋势占比约{0:.2f}%'.format(
-            100*len(lines[lines['pct'] < 0])/(Index.mergedTrendData[Index.mergedTrendData['pct'] < 0]['lastWeeks'].sum()*5)))
+            100 * len(lines[lines['pct'] < 0]) / (
+                        Index.mergedTrendData[Index.mergedTrendData['pct'] < 0]['lastWeeks'].sum() * 5)))
         print("k线中各类型占比:")
         print("上行，大阳 {0:.2f}%".format(
-            100*lines['close'][lines['pct'] > 0][lines['pctChg'] > 0].count()/lines['close'].count()))
+            100 * lines['close'][lines['pct'] > 0][lines['pctChg'] > 0].count() / lines['close'].count()))
         print("上行，大阴 {0:.2f}%".format(
-            100*lines['close'][lines['pct'] > 0][lines['pctChg'] < 0].count()/lines['close'].count()))
+            100 * lines['close'][lines['pct'] > 0][lines['pctChg'] < 0].count() / lines['close'].count()))
         print("下跌，大阳 {0:.2f}%".format(
-            100*lines['close'][lines['pct'] < 0][lines['pctChg'] > 0].count()/lines['close'].count()))
+            100 * lines['close'][lines['pct'] < 0][lines['pctChg'] > 0].count() / lines['close'].count()))
         print("下跌，大阴 {0:.2f}%".format(
-            100*lines['close'][lines['pct'] < 0][lines['pctChg'] < 0].count()/lines['close'].count()))
+            100 * lines['close'][lines['pct'] < 0][lines['pctChg'] < 0].count() / lines['close'].count()))
         print("无趋势，大阳 {0:.2f}%".format(
-            100*lines['close'][lines['trendIndex'] == -1][lines['pctChg'] > 0].count()/lines['close'].count()))
+            100 * lines['close'][lines['trendIndex'] == -1][lines['pctChg'] > 0].count() / lines['close'].count()))
         print("无趋势，大阴 {0:.2f}%".format(
-            100*lines['close'][lines['trendIndex'] == -1][lines['pctChg'] < 0].count()/lines['close'].count()))
+            100 * lines['close'][lines['trendIndex'] == -1][lines['pctChg'] < 0].count() / lines['close'].count()))
         return lines
 
     def statistic(self):
         self.getBasDat()
         self.getTrendPrd()
         self.getSecondaryTrendData()
-        if self.kType =='W' or self.kType == 'w':
+        if self.kType == 'W' or self.kType == 'w':
             self.trendData['startDay'] = self.trendData['startDate'].map(getMonday)
             self.secondaryTrendData['startDay'] = self.secondaryTrendData['startDate'].map(getMonday)
             self.mergedTrendData['startDay'] = self.mergedTrendData['startDate'].map(getMonday)
@@ -478,4 +488,4 @@ if __name__ == '__main__':
     Index.genDownTrend(-10, 9)
     # Index.volatility()
     # Index.volatilityData.plot.bar(x = 'pctChg', y = 'num')
-    Index.kLineAnalysis(3, 5)
+    Index.kLineAnalysis(0, 1)
