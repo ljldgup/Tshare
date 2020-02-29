@@ -23,7 +23,7 @@
 						<th>开始</th>
 						<th>结束</th>
 						<th>涨跌幅</th>
-						<th>持续时间</th>
+						<th>持续周数</th>
 					</tr>
 				</thead>
 
@@ -37,7 +37,7 @@
 		//$('div').css({"color":"red","border":"2px solid red"});
 
 		$(document).ready( function () {
-			trend_table = $('#trend_body').DataTable({
+			trendTable = $('#trend_body').DataTable({
 						
 						//盈利颜色设置
 						"columnDefs": [
@@ -54,7 +54,7 @@
 						]
 					});
 					
-            init_table(trend_table, trendData);
+            init_table(trendTable, trendData);
             
             //富文本编辑器
 			$('#copy').hide();
@@ -90,9 +90,9 @@
         function init_table(table,ini_data){
             for(var i = 0; i < ini_data.length;i++){
                 if( i == ini_data.length - 1){
-                    table.row.add([ini_data[i][0], ini_data[i][1], ini_data[i][4], ini_data[i][3]]).draw( true );
+                    table.row.add([ini_data[i][0], ini_data[i][1], ini_data[i][4], ini_data[i][5]]).draw( true );
                 }else{
-                    table.row.add([ini_data[i][0], ini_data[i][1], ini_data[i][4], ini_data[i][3]]);
+                    table.row.add([ini_data[i][0], ini_data[i][1], ini_data[i][4], ini_data[i][5]]);
                 }
             }
         }

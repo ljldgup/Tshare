@@ -44,11 +44,11 @@ def get_and_cache_kDate(code):
 
     else:
         ori_data_m = ts.get_k_data(code, ktype='M', autype='qfq', index=False,
-                                 start='2001-01-01', end=today)
+                                   start='2001-01-01', end=today)
         ori_data_w = ts.get_k_data(code, ktype='W', autype='qfq', index=False,
-                                 start='2001-01-01', end=today)
+                                   start='2001-01-01', end=today)
         ori_data_d = ts.get_k_data(code, ktype='D', autype='qfq', index=False,
-                                 start='2001-01-01', end=today)
+                                   start='2001-01-01', end=today)
         ori_data_d.to_csv(today_folder + '\\' + code + '_d')
         ori_data_w.to_csv(today_folder + '\\' + code + '_w')
         ori_data_m.to_csv(today_folder + '\\' + code + '_m')
@@ -114,15 +114,15 @@ class Share:
         data_bas = {'date': [], 'open': [], 'close': [], 'pct_chg': [], 'volume': []}
         pct_chg = data['close'].pct_change()
         data_bas['date'].append(data.date[0])
-        data_bas['close'].append(float(data.close[0]))
-        data_bas['open'].append(float(data.open[0]))
+        data_bas['close'].append(float(data['close'][0]))
+        data_bas['open'].append(float(data['open'][0]))
         data_bas['pct_chg'].append(pct_chg[0])
         data_bas['volume'].append(data.volume[0])
 
         for i in range(len(data) - 1):
             data_bas['date'].append(data.date[i + 1])
-            data_bas['close'].append(float(data.close[i + 1]))
-            data_bas['open'].append(float(data.open[i + 1]))
+            data_bas['close'].append(float(data['close'][i + 1]))
+            data_bas['open'].append(float(data['open'][i + 1]))
             pct = float(pct_chg[i + 1])
             data_bas['pct_chg'].append(kp2dig(pct))
             data_bas['volume'].append(data.volume[i + 1])
@@ -153,8 +153,8 @@ class Share:
         # 数周内未创新高或新低择视为趋势结束，否则则重新计计数
         while (week_count < up_last_times and cur_index < len(data) - 1):
             cur_index += 1
-            peak = float(data.close[peak_index])
-            cur = float(data.close[cur_index])
+            peak = float(data['close'][peak_index])
+            cur = float(data['close'][cur_index])
 
             if judge(cur, peak):
                 peak_index = cur_index
@@ -174,7 +174,7 @@ class Share:
         # 提取上升下降趋势的维持时间，涨幅
         # 开始时间，上升幅度，持续周数
         trend_data = {'start_pos': [], 'end_pos': [], 'pct': [], 'last_weeks': [], 'open': [], 'close': [],
-                     'begin_week_index': [], 'end_week_index': []}
+                      'begin_week_index': [], 'end_week_index': []}
 
         # 提取大于3%的涨幅，作为上涨趋势的初期的突破趋势,该幅度可调整
         ris_pct_index = data.query('pct_chg > ' + str(self.up_start_pct) + ' or pct_chg < ' + str(self.down_start_pct))
@@ -191,8 +191,8 @@ class Share:
             if end_week_index != i:
                 # print('{0},{1},{2},{3}'.format(i,tmp_index,data.date[i],data.date[tmp_index]))
                 # 注意是前一周的收盘价，不是当前周的开盘价，涨跌幅都是收盘价算的
-                beg_price = float(data.close[i - 1])
-                end_price = float(data.close[tmp_index])
+                beg_price = float(data['close'][i - 1])
+                end_price = float(data['close'][tmp_index])
                 pct = kp2dig(end_price / beg_price - 1)
                 # print('{0},{1},{2}'.format(beg_price,end_price,pct))
 
@@ -202,8 +202,8 @@ class Share:
                     trend_data['end_pos'].append(data.date[end_week_index])
                     trend_data['pct'].append(pct)
                     trend_data['last_weeks'].append(end_week_index - i + 1)
-                    trend_data['open'].append(data.close[i - 1])
-                    trend_data['close'].append(data.close[end_week_index])
+                    trend_data['open'].append(data['close'][i - 1])
+                    trend_data['close'].append(data['close'][end_week_index])
                     trend_data['begin_week_index'].append(i)
                     trend_data['end_week_index'].append(end_week_index)
 
@@ -220,8 +220,8 @@ class Share:
         # space_pct折返幅度占之前的比例
         # time_pct折返持续时间占之前的比例
         secondary_trend_data = {'start_pos': [], 'end_pos': [], 'last_weeks': [], 'pct': [], 'space_pct': [],
-                              'time_pct': [],
-                              'open': [], 'close': []}
+                                'time_pct': [],
+                                'open': [], 'close': []}
 
         # 合并趋势
         merged_trend_data = {'start_pos': [], 'end_pos': [], 'pct': [], 'last_weeks': [], 'open': [], 'close': []}
@@ -238,32 +238,36 @@ class Share:
                 last = index
                 flag = 1
 
-            elif (ris_trend_data.close[index] > ris_trend_data.close[last]
-                  and ris_trend_data.open[index] >= ris_trend_data.open[last]):
+            elif (ris_trend_data['close'][index] > ris_trend_data['close'][last]
+                  and ris_trend_data['open'][index] >= ris_trend_data['open'][last]):
                 secondary_trend_data['start_pos'].append(ris_trend_data.end_pos[last])
                 secondary_trend_data['end_pos'].append(ris_trend_data.start_pos[index])
                 secondary_trend_data['last_weeks'].append(
-                    ris_trend_data.begin_week_index[index] - ris_trend_data.end_week_index[last])
+                    ris_trend_data['begin_week_index'][index] - ris_trend_data['end_week_index'][last])
                 secondary_trend_data['pct'].append(
-                    kp2dig((ris_trend_data.close[last] - ris_trend_data.close[index]) / ris_trend_data.close[last]))
-                secondary_trend_data['space_pct'].append(kp2dig((ris_trend_data.close[last] - ris_trend_data.open[index]) / (
-                        ris_trend_data.close[last] - ris_trend_data.open[last])))
-                secondary_trend_data['time_pct'].append(kp2dig(
-                    (ris_trend_data.begin_week_index[index] - ris_trend_data.end_week_index[last]) / ris_trend_data.last_weeks[
+                    kp2dig((ris_trend_data['close'][last] - ris_trend_data['close'][index]) / ris_trend_data['close'][
                         last]))
-                secondary_trend_data['open'].append(ris_trend_data.close[last])
-                secondary_trend_data['close'].append(ris_trend_data.open[index])
+                secondary_trend_data['space_pct'].append(
+                    kp2dig((ris_trend_data['close'][last] - ris_trend_data['open'][index]) / (
+                            ris_trend_data['close'][last] - ris_trend_data['open'][last])))
+                secondary_trend_data['time_pct'].append(kp2dig(
+                    (ris_trend_data['begin_week_index'][index] - ris_trend_data['end_week_index'][last]) /
+                    ris_trend_data.last_weeks[
+                        last]))
+                secondary_trend_data['open'].append(ris_trend_data['close'][last])
+                secondary_trend_data['close'].append(ris_trend_data['open'][index])
                 last = index
 
             else:
                 merged_trend_data['start_pos'].append(ris_trend_data.start_pos[former])
                 merged_trend_data['end_pos'].append(ris_trend_data.end_pos[last])
                 merged_trend_data['last_weeks'].append(
-                    ris_trend_data.end_week_index[last] - ris_trend_data.begin_week_index[former])
+                    ris_trend_data['end_week_index'][last] - ris_trend_data['begin_week_index'][former])
                 merged_trend_data['pct'].append(
-                    kp2dig((ris_trend_data.close[last] - ris_trend_data.open[former]) / ris_trend_data.open[former]))
-                merged_trend_data['open'].append(ris_trend_data.close[former])
-                merged_trend_data['close'].append(ris_trend_data.open[last])
+                    kp2dig((ris_trend_data['close'][last] - ris_trend_data['open'][former]) / ris_trend_data['open'][
+                        former]))
+                merged_trend_data['open'].append(ris_trend_data['open'][former])
+                merged_trend_data['close'].append(ris_trend_data['close'][last])
                 former = index
                 last = index
 
@@ -275,32 +279,37 @@ class Share:
                 last = index
                 flag = 1
 
-            elif (down_trend_data.close[index] < down_trend_data.close[last]
-                  and down_trend_data.open[index] <= down_trend_data.open[last]):
+            elif (down_trend_data['close'][index] < down_trend_data['close'][last]
+                  and down_trend_data['open'][index] <= down_trend_data['open'][last]):
                 secondary_trend_data['start_pos'].append(down_trend_data.end_pos[last])
                 secondary_trend_data['end_pos'].append(down_trend_data.start_pos[index])
                 secondary_trend_data['last_weeks'].append(
-                    down_trend_data.begin_week_index[index] - down_trend_data.end_week_index[last])
+                    down_trend_data['begin_week_index'][index] - down_trend_data['end_week_index'][last])
                 secondary_trend_data['pct'].append(
-                    kp2dig((down_trend_data.close[last] - down_trend_data.close[index]) / down_trend_data.close[last]))
-                secondary_trend_data['space_pct'].append(kp2dig((down_trend_data.close[last] - down_trend_data.open[index]) / (
-                        down_trend_data.close[last] - down_trend_data.open[last])))
+                    kp2dig(
+                        (down_trend_data['close'][last] - down_trend_data['close'][index]) / down_trend_data['close'][
+                            last]))
+                secondary_trend_data['space_pct'].append(
+                    kp2dig((down_trend_data['close'][last] - down_trend_data['open'][index]) / (
+                            down_trend_data['close'][last] - down_trend_data['open'][last])))
                 secondary_trend_data['time_pct'].append(kp2dig(
-                    (down_trend_data.begin_week_index[index] - down_trend_data.end_week_index[last]) / down_trend_data.last_weeks[
+                    (down_trend_data['begin_week_index'][index] - down_trend_data['end_week_index'][last]) /
+                    down_trend_data.last_weeks[
                         last]))
-                secondary_trend_data['open'].append(down_trend_data.close[last])
-                secondary_trend_data['close'].append(down_trend_data.open[index])
+                secondary_trend_data['open'].append(down_trend_data['close'][last])
+                secondary_trend_data['close'].append(down_trend_data['open'][index])
                 last = index
 
             else:
                 merged_trend_data['start_pos'].append(down_trend_data.start_pos[former])
                 merged_trend_data['end_pos'].append(down_trend_data.end_pos[last])
                 merged_trend_data['last_weeks'].append(
-                    down_trend_data.end_week_index[last] - down_trend_data.begin_week_index[former])
+                    down_trend_data['end_week_index'][last] - down_trend_data['begin_week_index'][former])
                 merged_trend_data['pct'].append(
-                    kp2dig((down_trend_data.close[last] - down_trend_data.open[former]) / down_trend_data.open[former]))
-                merged_trend_data['open'].append(down_trend_data.open[former])
-                merged_trend_data['close'].append(down_trend_data.close[last])
+                    kp2dig((down_trend_data['close'][last] - down_trend_data['open'][former]) / down_trend_data['open'][
+                        former]))
+                merged_trend_data['open'].append(down_trend_data['open'][former])
+                merged_trend_data['close'].append(down_trend_data['close'][last])
                 former = index
                 last = index
 
@@ -309,7 +318,7 @@ class Share:
         self.merged_trend_data = pd.DataFrame(merged_trend_data)[
             ['start_pos', 'end_pos', 'pct', 'last_weeks', 'open', 'close']]
 
-        # 删除merged_trend_data中重叠趋势
+        # 删除与merged_trend_data重叠的初始趋势
         drop_list = []
         for i in self.merged_trend_data.index:
             if not self.merged_trend_data[
@@ -317,7 +326,9 @@ class Share:
                 (self.merged_trend_data['end_pos'] > self.merged_trend_data['end_pos'][i])].empty:
                 drop_list.append(i)
         self.merged_trend_data = self.merged_trend_data.drop(drop_list)
+        self.merged_trend_data['last_weeks'] += 1
 
+        # 用于分析k线在趋势中的位置用
         Mondays = self.merged_trend_data['start_pos'].map(get_monday)
         self.merged_trend_data['start_day_index'] = Mondays.map(
             lambda x: self.ori_data_d[self.ori_data_d['date'] >= x].index[0])
@@ -370,7 +381,8 @@ class Share:
 
         # 上涨猛烈程度评判
         result += str(time) + "周" + '内上涨幅度 >= ' + str(pct) + '%的概率: ' + str(
-            kp2dig(len(trend_data[trend_data.last_weeks < time][trend_data.pct >= pct]) / len(trend_data))) + ' %' + '\n'
+            kp2dig(
+                len(trend_data[trend_data.last_weeks < time][trend_data.pct >= pct]) / len(trend_data))) + ' %' + '\n'
         result += str(trend_data[trend_data.last_weeks < time][trend_data.pct > pct]) + '\n'
 
         print('-------------------------------------------------------------------------------')
@@ -443,13 +455,12 @@ class Share:
         self.volatility_data = pd.value_counts(cuts)
 
         # 绘制频率统计图
-        data['pct_chg'].plot.hist(bins=60)
-
-        # 某个日期所在的趋势
+        t = data['pct_chg'].plot.hist(bins=60)
+        t.set_xlim((-11, 11))
 
     def in_trend(self, index):
         trend = self.merged_trend_data[(self.merged_trend_data['start_day_index'] <= index) &
-                                     (self.merged_trend_data['end_day_index'] >= index)]
+                                       (self.merged_trend_data['end_day_index'] >= index)]
         # print(trend)
         if trend.empty:
             return -1
@@ -459,17 +470,18 @@ class Share:
 
     def k_line_analysis(self, altitude_l, altitude_u):
         lines = self.ori_data_d[(self.ori_data_d['pct_chg'].abs() >= altitude_l) &
-                              (self.ori_data_d['pct_chg'].abs() < altitude_u)]
+                                (self.ori_data_d['pct_chg'].abs() < altitude_u)]
         lines['trend_week_index'] = lines.index.map(self.in_trend)
         lines = pd.merge(lines[['date', 'close', 'pct_chg', 'trend_week_index']],
                          self.merged_trend_data[['start_pos', 'end_pos', 'pct', 'start_day_index', 'end_day_index']],
                          right_index=True, left_on='trend_week_index', how='left')
 
         # 调试用
-        self.temp_data = lines
+        # self.temp_data = lines
         # k线在趋势中的位置
         lines['in_trend_pos'] = lines.index.map(
-            lambda x: kp2dig((x - lines['start_day_index'][x]) / (lines['end_day_index'][x] - lines['start_day_index'][x])))
+            lambda x: kp2dig(
+                (x - lines['start_day_index'][x]) / (lines['end_day_index'][x] - lines['start_day_index'][x])))
 
         print("幅度{}~{}的k线, 占趋势比例".format(altitude_l, altitude_u))
         ris_merged_trend = self.merged_trend_data[self.merged_trend_data['pct'] > 0]
@@ -512,9 +524,11 @@ class Share:
             100 * t.count() / lines['close'].count()))
 
         print("无趋势，大阳 {0:.2f}%".format(
-            100 * lines['close'][lines['trend_week_index'] == -1][lines['pct_chg'] > 0].count() / lines['close'].count()))
+            100 * lines['close'][lines['trend_week_index'] == -1][lines['pct_chg'] > 0].count() / lines[
+                'close'].count()))
         print("无趋势，大阴 {0:.2f}%".format(
-            100 * lines['close'][lines['trend_week_index'] == -1][lines['pct_chg'] < 0].count() / lines['close'].count()))
+            100 * lines['close'][lines['trend_week_index'] == -1][lines['pct_chg'] < 0].count() / lines[
+                'close'].count()))
         return lines
 
     def statistic(self):

@@ -18,7 +18,7 @@ else:
     url = 'mysql+pymysql://' + settings.DATABASES['default']['USER'] + ':' + settings.DATABASES['default']['PASSWORD'] + '@localhost:3306/' + settings.DATABASES['default']['NAME'] + '?charset=utf8'
 yconnect = create_engine(url)
 
-def storekdata(code,yconnect):
+def store_k_data(code,yconnect):
 
     data1 = ts.get_k_data(code, ktype='D', autype=None ,index=False,start='2015-07-06', end='2018-09-28')
     data1['id'] = data1.index - data1.index.min()
@@ -27,4 +27,4 @@ def storekdata(code,yconnect):
 #data2['id'] = data2.index.
 #data2.to_sql("basic",con=yconnect,if_exists='replace')
 if __name__ == '__main__':
-    storekdata('000001',yconnect)
+    store_k_data('000001',yconnect)

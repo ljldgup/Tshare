@@ -6,12 +6,13 @@ Created on Sun Aug  5 00:18:51 2018
 """
 import datetime
 import os, sys
-import dbtest
+
 import pandas as pd
 from dateutil.relativedelta import relativedelta
 from sqlalchemy import create_engine
 
 sys.path.append("..")
+from tools import dbtest
 from HelloWorld import settings
 
 
@@ -188,7 +189,7 @@ def storeTrade():
     df.to_sql("original_trade_data", con=yconnect, if_exists='replace')
 
     for code in df['code'].drop_duplicates():
-        dbtest.storekdata(code, yconnect)
+        dbtest.store_k_data(code, yconnect)
         break
 
 
@@ -236,5 +237,5 @@ if __name__ == '__main__':
     df.to_sql("original_trade_data", con=yconnect, if_exists='replace')
 
     for code in df['code'].drop_duplicates():
-        dbtest.storeKdata(code, yconnect)
+        dbtest.store_k_data(code, yconnect)
         break
