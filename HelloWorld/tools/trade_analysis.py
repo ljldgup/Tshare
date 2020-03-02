@@ -152,7 +152,7 @@ def analysis3(trade_data):
     df = pd.DataFrame({'all_in': all_in_dis, 'all_out': all_out_dis})
     df.plot.bar()
 
-def storeTrade():
+def store_trade():
     df = pd.read_excel(os.path.dirname(__file__) + "/data.xlsx")
 
     df = df.query('operation == \'证券买入\' or operation == \'证券卖出\'')
@@ -187,11 +187,11 @@ def storeTrade():
 
     df['id'] = df.index
     df.to_sql("original_trade_data", con=yconnect, if_exists='replace')
-
+    '''
     for code in df['code'].drop_duplicates():
         dbtest.store_k_data(code, yconnect)
         break
-
+    '''
 
 if __name__ == '__main__':
     # use_proxy()

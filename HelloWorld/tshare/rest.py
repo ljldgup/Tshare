@@ -79,7 +79,7 @@ def k_data_json(request, r_code):
 
 def ori_trade_data_json(request):
     r_code = request.GET['r_code']
-    ori_data_w = tmd.Original_trade_data.objects.filter(code=r_code)
+    ori_data_w = tmd.OriginalTradeData.objects.filter(code=r_code)
     stat_list = []
     for i in ori_data_w:
         stat_list.append([str(i.date), i.name, i.amount, i.price, i.sum])
