@@ -49,9 +49,10 @@ def get_and_cache_kDate(code):
                                    start='2001-01-01', end=today)
         ori_data_d = ts.get_k_data(code, ktype='D', autype='qfq', index=False,
                                    start='2001-01-01', end=today)
-        ori_data_d.to_csv(today_folder + '\\' + code + '_d')
-        ori_data_w.to_csv(today_folder + '\\' + code + '_w')
-        ori_data_m.to_csv(today_folder + '\\' + code + '_m')
+        if len(ori_data_m) > 10:
+            ori_data_d.to_csv(today_folder + '\\' + code + '_d')
+            ori_data_w.to_csv(today_folder + '\\' + code + '_w')
+            ori_data_m.to_csv(today_folder + '\\' + code + '_m')
     return [ori_data_d, ori_data_w, ori_data_m]
 
 
@@ -124,17 +125,17 @@ class Share:
 
         # 确定涨跌
         if begin_pct > 0:
-            up_last_times = self.up_last_times
+            last_times = self.up_last_times
             judge = lambda x, y: x > y
 
         else:
-            up_last_times = self.down_last_times
+            last_times = self.down_last_times
             judge = lambda x, y: x < y
             self.former_down = beg_index
 
         week_count = 0
         # 数周内未创新高或新低择视为趋势结束，否则则重新计计数
-        while (week_count < up_last_times and cur_index < len(data) - 1):
+        while (week_count < last_times and cur_index < len(data) - 1):
             cur_index += 1
             peak = float(data['close'][peak_index])
             cur = float(data['close'][cur_index])
@@ -172,8 +173,7 @@ class Share:
                 pct = kp2dig(data['close'][end_w_index] / data['open'][i] - 1)
                 # print('{0},{1},{2}'.format(beg_price,end_price,pct))
 
-                if ((pct > self.up_pct and end_w_index - i + 1 > self.up_last_times) or
-                        (pct < self.down_pct and end_w_index - i + 1 > self.down_last_times)):
+                if pct > self.up_pct or pct < self.down_pct:
                     trend_data.loc[index] = [data.date[i], data.date[end_w_index], pct, end_w_index - i + 1,
                                              data['open'][i],
                                              data['close'][end_w_index], i, end_w_index]
@@ -196,8 +196,6 @@ class Share:
         # space_pct折返幅度占之前的比例
         # time_pct折返持续时间占之前的比例
 
-        secondary_trend = {'start_pos': [], 'end_pos': [], 'last_weeks': [], 'pct': [], 'space_pct': [],
-                           'time_pct': [], 'open': [], 'close': []}
         secondary_trend = pd.DataFrame(columns=['start_pos', 'end_pos', 'pct', 'last_weeks', 'open', 'close',
                                                 'space_pct', 'time_pct'])
 
