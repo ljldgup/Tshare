@@ -1,6 +1,6 @@
 from . import models as tmd
 from datetime import datetime
-from django.http import JsonResponse, HttpResponseRedirect
+from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
 from . import dbtools
 
 import sys
@@ -128,39 +128,16 @@ def trend_data_json(request, r_code):
         share.set_judge_condition(1, 2, 6, -1, 2, -6)
     else:
         share.set_judge_condition(3, 3, 15, -3, 3, -15)
-
     share.statistic()
+
     data_list = {}
-
-    ori_data_w = share.ori_data_w
-    trend_data = share.trend_data
-    secondary_trend_data = share.secondary_trend_data
-    merged_trend_data = share.merged_trend_data
-
-    data_list['qfq_data'] = []
-    for i in ori_data_w.index:
-        data_list['qfq_data'].append(
-            [ori_data_w.date[i], ori_data_w.open[i], ori_data_w.close[i], ori_data_w.high[i], ori_data_w.low[i],
-             ori_data_w.volume[i]])
-
-    data_list['trend_data'] = []
-    for i in trend_data.index:
-        data_list['trend_data'].append(
-            [trend_data.start_pos[i], trend_data.end_pos[i], trend_data.open[i], trend_data.close[i], trend_data.pct[i],
-             int(trend_data.last_weeks[i])])
-
-    data_list['secondary_trend_data'] = []
-    for i in secondary_trend_data.index:
-        data_list['secondary_trend_data'].append(
-            [secondary_trend_data.start_pos[i], secondary_trend_data.end_pos[i], secondary_trend_data.open[i],
-             secondary_trend_data.close[i], secondary_trend_data.pct[i], int(trend_data.last_weeks[i]),
-             secondary_trend_data.space_pct[i], secondary_trend_data.time_pct[i]])
-
-    data_list['merged_trend_data'] = []
-    for i in merged_trend_data.index:
-        data_list['merged_trend_data'].append([merged_trend_data.start_pos[i], merged_trend_data.end_pos[i],
-                                               merged_trend_data.open[i], merged_trend_data.close[i],
-                                               merged_trend_data.pct[i],
-                                               int(merged_trend_data.last_weeks[i])])
+    data_list['qfq_data'] = share.ori_data_w[
+        ['date', 'open', 'close', 'high', 'low', 'volume']].values.tolist()
+    data_list['trend_data'] = share.trend_data[
+        ['start_pos', 'end_pos', 'open', 'close', 'pct', 'last_weeks']].values.tolist()
+    data_list['secondary_trend_data'] = share.secondary_trend[
+        ['start_pos', 'end_pos', 'open', 'close', 'pct', 'last_weeks', 'space_pct', 'time_pct']].values.tolist()
+    data_list['merged_trend_data'] = share.merged_trend[
+        ['start_pos', 'end_pos', 'open', 'close', 'pct', 'last_weeks']].values.tolist()
 
     return JsonResponse(data_list, safe=False)

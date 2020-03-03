@@ -64,12 +64,8 @@ def get_trade(data):
             # 新的交易
             if t_count == 0:
                 index += 1
-                trade_data.at[index, "name"] = name
-                trade_data.at[index, "code"] = data.at[i, 'code']
-                trade_data.at[index, "i_date"] = data.at[i, 'date']
-                trade_data.at[index, "i_total"] = int(data.at[i, 'sum'])
-                trade_data.at[index, "o_total"] = 0
-                trade_data.at[index, "amount"] = int(data.at[i, 'amount'])
+                trade_data.loc[index] = [data.at[i, 'code'], name, data.at[i, 'date'], data.at[i, 'date'],
+                                         int(data.at[i, 'sum']), 0, int(data.at[i, 'amount'])]
                 t_count = data.at[i, 'amount']
 
             else:
@@ -89,12 +85,9 @@ def get_trade(data):
 
 def analysis_pre(trade_data):
     tmp = trade_data[trade_data["amount"] == 0]
-    tmp['time'] = tmp['o_date'] - tmp['i_date']
-    tmp['time'] = tmp['time'].apply(lambda x: x.days)
-    tmp['time'] = tmp['time'].astype(int)
+    tmp['time'] = (tmp['o_date'] - tmp['i_date']).apply(lambda x: int(x.days))
     tmp['earning'] = tmp['o_total'] - tmp['i_total']
-    tmp['pct'] = tmp['earning'] / tmp['i_total'] * 100
-    tmp['pct'] = tmp['pct'].apply(kp2dig)
+    tmp['pct'] = (tmp['earning'] / tmp['i_total'] * 100).apply(kp2dig)
     return tmp
 
 
@@ -112,28 +105,18 @@ def analysis1(trade_data):
     print("涨幅大于5%的收益:" + str(trade_data[trade_data['pct'] > 5].earning.sum()))
 
     print("跌幅大于5%的次数:" + str(len(trade_data[trade_data['pct'] < -5])))
-    print("跌幅大于5%的收益:" + str(trade_data[trade_data['pct'] < -5].earning.sum()))
+    print("跌幅大于5% :" + str(trade_data[trade_data['pct'] < -5].earning.sum()))
 
 
 def analysis2(trade_data):
     # 盈亏百分比对应数量和盈亏总和
-    tmax = int(trade_data['pct'].max() + 1)
-    tmin = int(trade_data['pct'].min() - 1)
-    st_data = pd.DataFrame(columns=["pct", "count", "earning", "time"])
-
-    index = 0
-    for i in range(tmin, tmax):
-        st_data.at[index, "pct"] = str(i) + "-" + str(i + 1)
-        tmp = trade_data[trade_data['pct'] > i]
-        tmp = tmp[tmp['pct'] < i + 1]
-        st_data.at[index, "count"] = len(tmp)
-        st_data.at[index, "earning"] = tmp['earning'].sum()
-        if len(tmp) != 0:
-            st_data.at[index, "time"] = tmp['time'].sum() / len(tmp)
-        st_data.at[index, "count"] = len(tmp)
-        index += 1
-
-    index = 0
+    cuts = pd.cut(trade_data['pct'], [-20, -10, -5, 0, 5, 10, 20, 40, 80])
+    groups = trade_data.groupby(cuts)
+    groups.apply(lambda x: x['earning'].sum())
+    st_data = pd.DataFrame(
+        {"count": groups.apply(lambda x: x['earning'].count()),
+         "earning": groups.apply(lambda x: x['earning'].sum()),
+         "time": groups.apply(lambda x: x['time'].mean())})
 
     # st_data.plot(x = "pct",y = "count",kind = "bar",figsize=(16,12))
     # st_data.plot(x = "pct",y = "earning",kind = "bar",figsize=(16,12))
@@ -151,6 +134,7 @@ def analysis3(trade_data):
     all_out_dis = trade_data['o_date'].map(lambda x: x.strftime('%Y-%m')).value_counts()
     df = pd.DataFrame({'all_in': all_in_dis, 'all_out': all_out_dis})
     df.plot.bar()
+
 
 def store_trade():
     df = pd.read_excel(os.path.dirname(__file__) + "/data.xlsx")
@@ -192,6 +176,7 @@ def store_trade():
         dbtest.store_k_data(code, yconnect)
         break
     '''
+
 
 if __name__ == '__main__':
     # use_proxy()
