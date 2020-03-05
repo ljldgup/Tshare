@@ -46,11 +46,13 @@ def get_and_cache_k_date(code):
     else:
         ori_data_m = ts.get_k_data(code, ktype='M', autype='qfq', index=False,
                                    start='2001-01-01', end=today)
+        sleep(0.3)
         ori_data_w = ts.get_k_data(code, ktype='W', autype='qfq', index=False,
                                    start='2001-01-01', end=today)
+        sleep(0.3)
         ori_data_d = ts.get_k_data(code, ktype='D', autype='qfq', index=False,
                                    start='2001-01-01', end=today)
-        sleep(0.5)
+        sleep(0.3)
         if len(ori_data_m) > 10:
             ori_data_d.to_csv(today_folder + '\\' + code + '_d')
             ori_data_w.to_csv(today_folder + '\\' + code + '_w')
