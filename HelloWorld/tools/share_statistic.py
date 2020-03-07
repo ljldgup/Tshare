@@ -6,6 +6,7 @@ This is a temporary script file.
 """
 import datetime
 import os
+from time import sleep
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -26,7 +27,7 @@ def use_proxy():
     print(os.environ["https_proxy"])
 
 
-def get_and_cache_kDate(code):
+def get_and_cache_k_date(code):
     # 获取，并缓存
     if not os.path.exists('data'):
         os.mkdir('data')
@@ -45,14 +46,20 @@ def get_and_cache_kDate(code):
     else:
         ori_data_m = ts.get_k_data(code, ktype='M', autype='qfq', index=False,
                                    start='2001-01-01', end=today)
+        sleep(0.3)
         ori_data_w = ts.get_k_data(code, ktype='W', autype='qfq', index=False,
                                    start='2001-01-01', end=today)
+        sleep(0.3)
         ori_data_d = ts.get_k_data(code, ktype='D', autype='qfq', index=False,
                                    start='2001-01-01', end=today)
+        sleep(0.3)
         if len(ori_data_m) > 10:
             ori_data_d.to_csv(today_folder + '\\' + code + '_d')
             ori_data_w.to_csv(today_folder + '\\' + code + '_w')
             ori_data_m.to_csv(today_folder + '\\' + code + '_m')
+
+    for data in [ori_data_m, ori_data_w, ori_data_d]:
+        data['pct_chg'] = data['close'].pct_change().fillna(0).map(kp2dig)
     return [ori_data_d, ori_data_w, ori_data_m]
 
 
@@ -104,10 +111,7 @@ class Share:
     # 获取原始数据self.ori_data, 经过加工的基本数据self.bas_data
     def get_bas_dat(self):
         # 获取原始数据
-        self.ori_data_d, self.ori_data_w, self.ori_data_m = get_and_cache_kDate(self.code)
-
-        for data in [self.ori_data_m, self.ori_data_w, self.ori_data_d]:
-            data['pct_chg'] = data['close'].pct_change().fillna(0).map(kp2dig)
+        self.ori_data_d, self.ori_data_w, self.ori_data_m = get_and_cache_k_date(self.code)
 
         self.ori_data_w.index = self.ori_data_w.index - self.ori_data_w.index[0]
         # 从初始数据中提取每周日期，收盘价，涨跌幅
