@@ -210,7 +210,6 @@ class Share:
                                                 'space_pct', 'time_pct'])
 
         # 合并趋势
-        merged_trend = {'start_pos': [], 'end_pos': [], 'pct': [], 'last_weeks': [], 'open': [], 'close': []}
         merged_trend = pd.DataFrame(columns=['start_pos', 'end_pos', 'pct', 'last_weeks', 'open', 'close'])
         up_trend = trend_data[trend_data['pct'] > 0]
         down_trend = trend_data[trend_data['pct'] < 0]
@@ -218,22 +217,28 @@ class Share:
         merged_index = 0
         secondary_index = 0
 
-        for trend, judge in zip([up_trend, down_trend], [lambda x, y: x > y, lambda x, y: x < y]):
+        for trend, judge, max_min in zip([up_trend, down_trend], [lambda x, y: x > y, lambda x, y: x < y], [min, max]):
 
             first = trend.index[0]
             last = trend.index[0]
             for index in trend.index[1:]:
-
+                # 上行：当前趋势开始和结束都比上一个趋势高，统计下跌时相反
                 if (judge(trend['close'][index], trend['close'][last])
                         and judge(trend['open'][index], trend['open'][last])):
-                    # 上行：当前趋势开始和结束都比上一个趋势高，统计下跌时相反
+                    # 时间为两波趋势间隔，空间为最大回撤，因为下一波趋势开始的价格并不是最低价
+                    # 获得次级趋势最大回撤价格
+                    data = self.ori_data_d
+                    data = data[data['date'] > trend['end_pos'][last]][data['date'] <= trend['start_pos'][index]][
+                        'close']
+                    peak_valley = max_min(data)
                     secondary_trend.loc[secondary_index] = [trend.end_pos[last], trend.start_pos[index],
-                                                            (trend['close'][last] - trend['open'][index]) /
+                                                            # 改为最大回撤幅度
+                                                            (- trend['close'][last] + peak_valley) /
                                                             trend['close'][last],
                                                             trend['start_w_index'][index] - trend['end_w_index'][last],
                                                             trend['close'][last], trend['open'][index],
-
-                                                            (trend['close'][last] - trend['open'][index])
+                                                            # 改为最大回撤幅度
+                                                            (trend['close'][last] - peak_valley)
                                                             / (trend['close'][last] - trend['open'][last]),
 
                                                             (trend['start_w_index'][index] - trend['end_w_index'][
@@ -266,17 +271,19 @@ class Share:
         for column in ['pct', 'space_pct', 'time_pct']:
             secondary_trend[column] = secondary_trend[column].map(kp2dig)
         merged_trend['pct'] = merged_trend['pct'].map(kp2dig)
-
+        secondary_trend = secondary_trend.sort_values("start_pos")
         self.secondary_trend = secondary_trend
-        self.merged_trend = merged_trend
+
         # 删除与merged_trend重叠的初始趋势
         drop_list = []
-        for i in self.merged_trend.index:
-            if not self.merged_trend[
-                (self.merged_trend['start_pos'] < self.merged_trend['start_pos'][i]) &
-                (self.merged_trend['end_pos'] > self.merged_trend['end_pos'][i])].empty:
+        for i in merged_trend.index:
+            if not merged_trend[
+                (merged_trend['start_pos'] < merged_trend['start_pos'][i]) &
+                (merged_trend['end_pos'] > merged_trend['end_pos'][i])].empty:
                 drop_list.append(i)
-        self.merged_trend = self.merged_trend.drop(drop_list)
+        merged_trend = merged_trend.drop(drop_list)
+        merged_trend = merged_trend.sort_values(by='start_pos')
+        self.merged_trend = merged_trend
 
     def gen_up_sta(self):
         # 对于上升趋势的总体统计
@@ -487,7 +494,7 @@ class Share:
 if __name__ == '__main__':
     # use_proxy()
 
-    share = Share('cyb')
+    share = Share('002111')
     # 上证指数的周线系数可用度较高
     # share.set_judge_condition(1, 2, 6, -1, 2, -6)
     # share.set_judge_condition(1, 2, 15, -1, 2, -15)
