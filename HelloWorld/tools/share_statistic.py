@@ -322,7 +322,7 @@ class Share:
             time = trend_data['last_weeks'].iloc[-1]
         # 涨幅大于pct大概率 和时长大于time的概率
 
-        result = '形成的趋势中'
+        result = '非融合上升趋势中'
 
         # 根据统计，上涨幅度增加的可能性
         result += '上涨幅度 > ' + str(pct) + '% 的概率: ' + str(
@@ -385,7 +385,7 @@ class Share:
             time = trend_data['last_weeks'].iloc[-1]
 
         trend_data = self.trend_data[self.trend_data['pct'] < 0]
-        result = '形成的趋势中'
+        result = '非融合下行趋势中'
 
         # 根据统计，下跌幅度扩大的可能性
         result += '幅度:下跌幅度 < ' + str(pct) + '% 的概率: ' + str(
@@ -398,7 +398,7 @@ class Share:
         result += str(
             trend_data[trend_data['last_weeks'] > time][['start_pos', 'end_pos', 'pct', 'last_weeks']]) + '\n'
 
-        # 下跌猛烈评判
+        # 下跌猛烈评判,该指标只适合评判是否会有反抽一类走势，长期走势没有作用
         result += str(time) + "周" + '内下跌幅度 < ' + str(pct) + '%的概率: ' + str(
             kp2dig(len(trend_data[trend_data['last_weeks'] <= time][trend_data['pct'] <= pct]) / (len(
                 trend_data) + 1))) + ' %' + '\n'
@@ -494,7 +494,7 @@ class Share:
 if __name__ == '__main__':
     # use_proxy()
 
-    share = Share('002111')
+    share = Share('cyb')
     # 上证指数的周线系数可用度较高
     # share.set_judge_condition(1, 2, 6, -1, 2, -6)
     # share.set_judge_condition(1, 2, 15, -1, 2, -15)
