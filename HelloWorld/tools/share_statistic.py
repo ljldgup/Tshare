@@ -67,7 +67,7 @@ def kp2dig(number):
     # 范围两位小数百分比
     if not np.isnan(number):
         pct = float(number)
-        return (int(pct * 10000) / 100.0)
+        return int(pct * 10000) / 100.0
     else:
         return 0
 
@@ -94,9 +94,9 @@ class Share:
 
         # 默认上涨下跌判断条件
         if code == 'sh' or code == 'sz' or code == 'cyb':
-            self.set_judge_condition(1, 3, 6, -1, 3, -6)
+            self.set_judge_condition(0.5, 4, 6, -1, 3, -6)
         else:
-            self.set_judge_condition(3, 3, 15, -3, 3, -15)
+            self.set_judge_condition(0.5, 4, 15, -3, 3, -15)
 
     def set_judge_condition(self, up_start_pct, up_last_times, up_pct, down_start_pct, down_last_times, down_pct):
         # 上涨，下跌开始判定涨跌比百分率，持续周，合格百分比波动
@@ -446,6 +446,7 @@ class Share:
 
         lines = self.ori_data_d[(self.ori_data_d['pct_chg'].abs() >= altitude_l) &
                                 (self.ori_data_d['pct_chg'].abs() < altitude_u)]
+        # 根据索引计算在趋势中的位置
         lines['trend_w_index'] = lines.index.map(self.in_trend)
         lines = pd.merge(lines[['date', 'close', 'pct_chg', 'trend_w_index']],
                          self.merged_trend[['start_pos', 'end_pos', 'pct', 'start_d_index', 'end_d_index']],
@@ -492,9 +493,9 @@ class Share:
 
 
 if __name__ == '__main__':
-    # use_proxy()
+    use_proxy()
 
-    share = Share('cyb')
+    share = Share('sh')
     # 上证指数的周线系数可用度较高
     # share.set_judge_condition(1, 2, 6, -1, 2, -6)
     # share.set_judge_condition(1, 2, 15, -1, 2, -15)
