@@ -285,131 +285,86 @@ class Share:
         merged_trend = merged_trend.sort_values(by='start_pos')
         self.merged_trend = merged_trend
 
-    def gen_up_sta(self):
+    def gen_trend_statistic(self, type='up'):
         # 对于上升趋势的总体统计
         data = self.bas_data
-        trend_data = self.trend_data[self.trend_data['pct'] > 0]
+        if type == 'up':
+            trend_data = self.trend_data[self.trend_data['pct'] > 0]
+        elif type == 'down':
+            trend_data = self.trend_data[self.trend_data['pct'] < 0]
+        else:
+            return
 
         result = ''
-        result += '统计时间' + data.date[0] + '~' + data.date[len(data) - 1] + ':\n' + '\n'
-
-        temp_float = 0
-        temp_int = 0
+        result += '统计时间{}~{}\n'.format(data.date[0], data.date[len(data) - 1])
 
         # 综合统计
-        # 统计趋势中的超过上涨幅度up_start_pct的k线
-        for i in data[data['pct_chg'] > self.up_start_pct].index:
-            if len(trend_data[trend_data.start_pos < data.date[i]][trend_data.end_pos > data.date[i]]) > 0:
-                temp_int += 1
-        temp_float = kp2dig(len(trend_data) / (len(data[data['pct_chg'] > self.up_start_pct]) - temp_int))
+        result += '平均幅度: {} %\n'.format(kp2dig(trend_data['pct'].mean() / 100))
+        result += '平均维持时长: {}周\n\n'.format(kp2dig(trend_data['last_weeks'].mean() / 100))
 
-        result += '上涨百分比 >= ' + str(self.up_start_pct) + '% 的k线共 ' + str(
-            len(data[data['pct_chg'] > self.up_start_pct])) + ' 个' + '\n'
-        result += '其中形成趋势的有 ' + str(len(trend_data)) + ' 个k线' + '\n'
-        result += '去除上涨趋势中的 ' + str(temp_int) + ' 条k线，形成趋势概率' + str(temp_float) + '%' + '\n' + '\n'
-        result += '平均上涨幅度: ' + str(kp2dig(trend_data['pct'].mean() / 100)) + ' %' + '\n'
-        result += '平均维持时长: ' + str(kp2dig(trend_data['last_weeks'].mean() / 100)) + "周" + '\n' + '\n'
+        pct_values = trend_data['pct'].values.copy()
+        pct_values.sort()
+        num = len(pct_values)
+        result += '幅度90%置信区间: {}~{}\n\n'.format(pct_values[round(num * 0.05)], pct_values[round(num * 0.95)])
+        result += '幅度70%置信区间: {}~{}\n\n'.format(pct_values[round(num * 0.15)], pct_values[round(num * 0.85)])
+
+        time_values = trend_data['last_weeks'].values.copy()
+        time_values.sort()
+        num = len(time_values)
+        result += '持续时间90%置信区间: {}~{}\n\n'.format(time_values[round(num * 0.05)], time_values[round(num * 0.95)])
+        result += '持续时间70%置信区间: {}~{}\n\n'.format(time_values[round(num * 0.15)], time_values[round(num * 0.85)])
 
         print('-------------------------------------------------------------------------------')
         print(result)
 
-    def gen_trend(self, pct=None, time=None):
-        trend_data = self.trend_data[self.trend_data['pct'] > 0]
+    # 将指定的幅度，时长的趋势，与历史趋势相比较
+    def trend_compare(self, pct=None, time=None):
         if not pct:
-            print("以最后一波升势统计")
-            print(trend_data.iloc[-1])
-            pct = trend_data['pct'].iloc[-1]
-            time = trend_data['last_weeks'].iloc[-1]
-        # 涨幅大于pct大概率 和时长大于time的概率
+            print("以最后一波趋势统计")
+            print(self.trend_data.iloc[-1])
+            pct = self.trend_data['pct'].iloc[-1]
+            time = self.trend_data['last_weeks'].iloc[-1]
 
-        result = '非融合上升趋势中'
+        if pct > 0:
+            print('上涨趋势统计')
+            trend_data = self.trend_data[self.trend_data['pct'] > 0]
+        else:
+            print('下跌趋势统计')
+            trend_data = self.trend_data[self.trend_data['pct'] < 0]
 
-        # 根据统计，上涨幅度增加的可能性
-        result += '上涨幅度 > ' + str(pct) + '% 的概率: ' + str(
-            kp2dig(len(trend_data[trend_data['pct'] > pct]) / (len(trend_data) - 1))) + ' %' + '\n'
-        result += str(trend_data[trend_data['pct'] > pct][['start_pos', 'end_pos', 'pct', 'last_weeks']]) + '\n'
+        result_trend_data = []
 
-        # 根据统计，上涨时长增加的可能性
-        result += '上涨时长 > ' + str(time) + "周" + ': ' + str(
-            kp2dig(len(trend_data[trend_data['last_weeks'] > time]) / (len(trend_data) - 1))) + ' %' + '\n'
-        result += str(
-            trend_data[trend_data['last_weeks'] > time][['start_pos', 'end_pos', 'pct', 'last_weeks']]) + '\n'
+        # 返回对应数据
+        required_columns = ['start_pos', 'end_pos', 'pct', 'last_weeks']
+        result_trend_data.append(trend_data[abs(trend_data['pct']) > abs(pct)][required_columns])
+        result_trend_data.append(
+            trend_data[trend_data['last_weeks'] > time][required_columns])
+        result_trend_data.append(
+            trend_data[trend_data['last_weeks'] <= time][abs(trend_data['pct']) >= abs(pct)][required_columns])
 
-        # 上涨猛烈程度评判
-        result += str(time) + "周" + '内上涨幅度 >= ' + str(pct) + '%的概率: ' + str(
-            kp2dig(
-                len(trend_data[trend_data['last_weeks'] <= time][trend_data['pct'] >= pct]) / (len(
-                    trend_data)) - 1)) + ' %' + '\n'
-        result += str(trend_data[trend_data['last_weeks'] <= time][trend_data['pct'] >= pct][
-                          ['start_pos', 'end_pos', 'pct', 'last_weeks']]) + '\n'
+        result_str = '非融合趋势中:\n'
 
-        print('-------------------------------------------------------------------------------')
-        print(result)
+        # 根据统计，幅度增加的可能性
+        potability = kp2dig(len(result_trend_data[0]) / len(trend_data))
+        result_str += '幅度 > {}% 的概率 {}%\n'.format(pct, potability)
+        result_str += str(result_trend_data[0]) + '\n'
 
-    def gen_down_sta(self):
-        data = self.bas_data
-        trend_data = self.trend_data[self.trend_data['pct'] < 0]
+        # 根据统计，时长增加的可能性
+        potability = kp2dig(len(result_trend_data[1]) / len(trend_data))
+        result_str += '持续时长 > {}周的概率 {}%\n'.format(time, potability)
+        result_str += str(result_trend_data[1]) + '\n'
 
-        # 对于上升趋势的总体统计
-
-        result = ''
-        result += '统计时间' + data.date[0] + '~' + data.date[len(data) - 1] + ':\n' + '\n'
-
-        temp_float = 0
-        temp_int = 0
-
-        # 趋势综合统计
-        # 统计趋势中的超过上涨幅度up_start_pct的k线（下行相反）
-        for i in data[data['pct_chg'] < self['down_start_pct']].index:
-            if len(trend_data[trend_data.start_pos < data.date[i]][trend_data.end_pos > data.date[i]]) > 0:
-                temp_int += 1
-        temp_float = kp2dig(len(trend_data) / (len(data[data['pct_chg'] < self['down_start_pct']]) - temp_int))
-
-        result += '下跌百分比 <= ' + str(self['down_start_pct']) + '% 的k线共 ' + str(
-            len(data[data['pct_chg'] < self['down_start_pct']])) + ' 个' + '\n'
-        result += '其中形成下跌趋势的有 ' + str(len(trend_data)) + ' 个k线' + '\n'
-        result += '去除下跌趋势中的 ' + str(temp_int) + ' 条k线，形成趋势概率' + str(temp_float) + '%' + '\n' + '\n'
-        result += '平均下跌幅度: ' + str(kp2dig(trend_data['pct'].mean() / 100)) + ' %' + '\n'
-        result += '平均维持时长: ' + str(kp2dig(trend_data['last_weeks'].mean() / 100)) + "周" + '\n' + '\n'
+        # 上涨猛烈程度评判,只能用来短期是否有反抽之类，没有太大用
+        potability = kp2dig(len(result_trend_data[2]) / len(trend_data))
+        result_str += '{}周内上涨幅度 >= {}%的概率: {} %\n'.format(time, pct, potability)
+        result_str += str(result_trend_data[2]) + '\n'
 
         print('-------------------------------------------------------------------------------')
-        print(result)
+        print(result_str)
 
-    def gen_down_trend(self, pct=None, time=None):
-        # 跌幅大于pct大概率 和时长大于time的概率
-        trend_data = self.trend_data[self.trend_data['pct'] < 0]
-        if not pct:
-            print("以最后一波下跌进行统计")
-            print(trend_data.iloc[-1])
-            pct = trend_data['pct'].iloc[-1]
-            time = trend_data['last_weeks'].iloc[-1]
+        # return result_trend_data
 
-        trend_data = self.trend_data[self.trend_data['pct'] < 0]
-        result = '非融合下行趋势中'
-
-        # 根据统计，下跌幅度扩大的可能性
-        result += '幅度:下跌幅度 < ' + str(pct) + '% 的概率: ' + str(
-            kp2dig(len(trend_data[trend_data['pct'] < pct]) / (len(trend_data) - 1))) + ' %' + '\n'
-        result += str(trend_data[trend_data['pct'] < pct][['start_pos', 'end_pos', 'pct', 'last_weeks']]) + '\n'
-
-        # 根据统计，下跌时长扩大的可能性
-        result += '下跌时长 > ' + str(time) + "周" + ': ' + str(
-            kp2dig(len(trend_data[trend_data['last_weeks'] > time]) / (len(trend_data) - 1))) + ' %' + '\n'
-        result += str(
-            trend_data[trend_data['last_weeks'] > time][['start_pos', 'end_pos', 'pct', 'last_weeks']]) + '\n'
-
-        # 下跌猛烈评判,该指标只适合评判是否会有反抽一类走势，长期走势没有作用
-        result += str(time) + "周" + '内下跌幅度 < ' + str(pct) + '%的概率: ' + str(
-            kp2dig(len(trend_data[trend_data['last_weeks'] <= time][trend_data['pct'] <= pct]) / (len(
-                trend_data) + 1))) + ' %' + '\n'
-        result += str(trend_data[trend_data['last_weeks'] <= time][trend_data['pct'] <= pct][
-                          ['start_pos', 'end_pos', 'pct', 'last_weeks']]) + '\n'
-
-        print('-------------------------------------------------------------------------------')
-        print(result)
-
-        # 对个股的涨跌幅频率分布的统计
-
+    # 对个股的涨跌幅频率分布的统计
     def volatility(self, start_date=None, end_date=None):
         data = self.bas_data
         if start_date:
@@ -436,10 +391,11 @@ class Share:
             # 这里index已经不是从0开始的正常顺序了，取0会得到key error
             return trend.index[0]
 
+    # 用于分析k线在趋势中的位置用,输入的是k线涨幅上下幅度
     def k_line_analysis(self, altitude_l, altitude_u):
-        # 用于分析k线在趋势中的位置用
-        Mondays = self.merged_trend['start_pos'].map(get_monday)
-        self.merged_trend['start_d_index'] = Mondays.map(
+
+        mondays = self.merged_trend['start_pos'].map(get_monday)
+        self.merged_trend['start_d_index'] = mondays.map(
             lambda x: self.ori_data_d[self.ori_data_d['date'] >= x].index[0])
         self.merged_trend['end_d_index'] = self.merged_trend['end_pos'].map(
             lambda x: self.ori_data_d[self.ori_data_d['date'] >= x].index[0])
@@ -493,16 +449,15 @@ class Share:
 
 
 if __name__ == '__main__':
-    use_proxy()
+    # use_proxy()
 
     share = Share('sh')
     # 上证指数的周线系数可用度较高
     # share.set_judge_condition(1, 2, 6, -1, 2, -6)
     # share.set_judge_condition(1, 2, 15, -1, 2, -15)
     share.statistic()
-    # share.gen_trend(32, 13)
-    share.gen_trend()
-    # share.gen_down_trend(-20, 9)
-    share.gen_down_trend()
+    share.gen_trend_statistic()
+    # share.trend_compare(32, 13)
+    share.trend_compare()
     # share.volatility('2014-06-30','2015-05-30')
     # share.k_line_analysis(0, 1)
