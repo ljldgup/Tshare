@@ -4,15 +4,15 @@ Created on Sun Aug  5 00:18:51 2018
 
 @author: ljl
 """
-import datetime
 import os, sys
 
 import pandas as pd
-from dateutil.relativedelta import relativedelta
 from sqlalchemy import create_engine
 
-sys.path.append("..")
 from tools import dbtest
+from tools.commom_tools import two_digit_percent
+
+sys.path.append("..")
 from HelloWorld import settings
 
 
@@ -23,11 +23,6 @@ def use_proxy():
     os.environ[HTTPS_PROXY] = "cn-proxy.jp.oracle.com:80"
     print(os.environ["http_proxy"])
     print(os.environ["https_proxy"])
-
-
-def kp2dig(number):
-    # 范围两位小数百分比
-    return float('%.5f' % (number))
 
 
 # 补全股票代码
@@ -87,7 +82,7 @@ def analysis_pre(trade_data):
     tmp = trade_data[trade_data["amount"] == 0]
     tmp['time'] = (tmp['o_date'] - tmp['i_date']).apply(lambda x: int(x.days))
     tmp['earning'] = tmp['o_total'] - tmp['i_total']
-    tmp['pct'] = (tmp['earning'] / tmp['i_total'] * 100).apply(kp2dig)
+    tmp['pct'] = (tmp['earning'] / tmp['i_total']).apply(two_digit_percent)
     return tmp
 
 
@@ -99,7 +94,7 @@ def analysis1(trade_data):
 
     print("成功次数：" + str(len(trade_data[trade_data['earning'] > 0])))
     print("失败次数：" + str(len(trade_data[trade_data['earning'] < 0])))
-    print("成功率：" + str(kp2dig(len(trade_data[trade_data['earning'] > 0]) / len(trade_data)) * 100) + "%")
+    print("成功率：" + str(two_digit_percent(len(trade_data[trade_data['earning'] > 0]) / len(trade_data))) + "%")
 
     print("涨幅大于5%的次数:" + str(len(trade_data[trade_data['pct'] > 5])))
     print("涨幅大于5%的收益:" + str(trade_data[trade_data['pct'] > 5].earning.sum()))
@@ -112,7 +107,7 @@ def analysis2(trade_data):
     # 盈亏百分比对应数量和盈亏总和
     cuts = pd.cut(trade_data['pct'], [-20, -10, -5, 0, 5, 10, 20, 40, 80])
     groups = trade_data.groupby(cuts)
-    groups.apply(lambda x: x['earning'].sum())
+    # groups.apply(lambda x: x['earning'].sum())
     st_data = pd.DataFrame(
         {"count": groups.apply(lambda x: x['earning'].count()),
          "earning": groups.apply(lambda x: x['earning'].sum()),
@@ -136,6 +131,7 @@ def analysis3(trade_data):
     df.plot.bar()
 
 
+# 每次django启动时调用，刷新交易数据
 def store_trade():
     df = pd.read_excel(os.path.dirname(__file__) + "/data.xlsx")
 

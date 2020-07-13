@@ -14,62 +14,10 @@ import pandas as pd
 import tushare as ts
 
 # 支持中文
+from tools.commom_tools import two_digit_percent, get_k_data
+
 plt.rcParams['font.sans-serif'] = ['KaiTi']  # 用来正常显示中文标签
 plt.rcParams['axes.unicode_minus'] = False  # 用来正常显示负号
-
-
-def use_proxy():
-    HTTP_PROXY = "http_proxy"
-    HTTPS_PROXY = "https_proxy"
-    os.environ[HTTP_PROXY] = "cn-proxy.jp.oracle.com:80"
-    os.environ[HTTPS_PROXY] = "cn-proxy.jp.oracle.com:80"
-    print(os.environ["http_proxy"])
-    print(os.environ["https_proxy"])
-
-
-def get_and_cache_k_date(code):
-    # 获取，并缓存
-    if not os.path.exists('data'):
-        os.mkdir('data')
-    today = datetime.datetime.now().strftime(("%Y-%m-%d"))
-    today_folder = "data\\" + today
-    if not os.path.exists(today_folder):
-        os.mkdir(today_folder)
-    if os.path.exists(today_folder + '\\' + code + '_d') and \
-            os.path.exists(today_folder + '\\' + code + '_w') and \
-            os.path.exists(today_folder + '\\' + code + '_m'):
-        print("read from csv")
-        ori_data_d = pd.read_csv(today_folder + '\\' + code + '_d')
-        ori_data_w = pd.read_csv(today_folder + '\\' + code + '_w')
-        ori_data_m = pd.read_csv(today_folder + '\\' + code + '_m')
-
-    else:
-        ori_data_m = ts.get_k_data(code, ktype='M', autype='qfq', index=False,
-                                   start='2001-01-01', end=today)
-        sleep(0.3)
-        ori_data_w = ts.get_k_data(code, ktype='W', autype='qfq', index=False,
-                                   start='2001-01-01', end=today)
-        sleep(0.3)
-        ori_data_d = ts.get_k_data(code, ktype='D', autype='qfq', index=False,
-                                   start='2001-01-01', end=today)
-        sleep(0.3)
-        if len(ori_data_m) > 10:
-            ori_data_d.to_csv(today_folder + '\\' + code + '_d')
-            ori_data_w.to_csv(today_folder + '\\' + code + '_w')
-            ori_data_m.to_csv(today_folder + '\\' + code + '_m')
-
-    for data in [ori_data_m, ori_data_w, ori_data_d]:
-        data['pct_chg'] = data['close'].pct_change().fillna(0).map(kp2dig)
-    return [ori_data_d, ori_data_w, ori_data_m]
-
-
-def kp2dig(number):
-    # 范围两位小数百分比
-    if not np.isnan(number):
-        pct = float(number)
-        return int(pct * 10000) / 100.0
-    else:
-        return 0
 
 
 def get_monday(end_pos):
@@ -111,7 +59,8 @@ class Share:
     # 获取原始数据self.ori_data, 经过加工的基本数据self.bas_data
     def get_bas_dat(self):
         # 获取原始数据
-        self.ori_data_d, self.ori_data_w, self.ori_data_m = get_and_cache_k_date(self.code)
+
+        self.ori_data_d, self.ori_data_w, self.ori_data_m = get_k_data(self.code,'qfq')
 
         self.ori_data_w.index = self.ori_data_w.index - self.ori_data_w.index[0]
         # 从初始数据中提取每周日期，收盘价，涨跌幅
@@ -179,7 +128,7 @@ class Share:
                 # print('{0},{1},{2},{3}'.format(i,tmp_index,data.date[i],data.date[tmp_index]))
                 # 注意是前一周的收盘价，不是当前周的开盘价，涨跌幅都是收盘价算的
 
-                pct = kp2dig(data['close'][end_w_index] / data['open'][i] - 1)
+                pct = two_digit_percent(data['close'][end_w_index] / data['open'][i] - 1)
                 # print('{0},{1},{2}'.format(beg_price,end_price,pct))
 
                 if pct > self.up_pct or pct < self.down_pct:
@@ -194,8 +143,7 @@ class Share:
             except:
                 i = up_pct_index.index[-1] + 1
 
-        # 调整一下列名顺序，Date_frame创建时列名按字母排序
-        order = ['start_pos', 'end_pos', 'pct', 'last_weeks', 'open', 'close', 'start_w_index', 'end_w_index']
+            trend_data['last_weeks'] = trend_data['last_weeks'].astype(float)
         self.trend_data = trend_data
 
     # 融合的大趋势, 获得次级回调趋势
@@ -269,8 +217,8 @@ class Share:
 
         # 百分比处理
         for column in ['pct', 'space_pct', 'time_pct']:
-            secondary_trend[column] = secondary_trend[column].map(kp2dig)
-        merged_trend['pct'] = merged_trend['pct'].map(kp2dig)
+            secondary_trend[column] = secondary_trend[column].map(two_digit_percent)
+        merged_trend['pct'] = merged_trend['pct'].map(two_digit_percent)
         secondary_trend = secondary_trend.sort_values("start_pos")
         self.secondary_trend = secondary_trend
 
@@ -299,20 +247,20 @@ class Share:
         result += '统计时间{}~{}\n'.format(data.date[0], data.date[len(data) - 1])
 
         # 综合统计
-        result += '平均幅度: {} %\n'.format(kp2dig(trend_data['pct'].mean() / 100))
-        result += '平均维持时长: {}周\n\n'.format(kp2dig(trend_data['last_weeks'].mean() / 100))
+        result += '平均幅度: {:.2f} %\n'.format(trend_data['pct'].mean())
+        result += '平均维持时长: {:.2f}周\n\n'.format(trend_data['last_weeks'].mean())
 
-        pct_values = trend_data['pct'].values.copy()
-        pct_values.sort()
-        num = len(pct_values)
-        result += '幅度90%置信区间: {}~{}\n\n'.format(pct_values[round(num * 0.05)], pct_values[round(num * 0.95)])
-        result += '幅度70%置信区间: {}~{}\n\n'.format(pct_values[round(num * 0.15)], pct_values[round(num * 0.85)])
+        print('根据均线趋势情况选择置信区间')
+        # quantile分位数函数
+        result += '幅度80%置信区间: {:.2f}~{:.2f}\n\n'.format(trend_data['pct'].quantile(0.1),
+                                                trend_data['pct'].quantile(0.9))
+        result += '幅度60%置信区间: {:.2f}~{:.2f}\n\n'.format(trend_data['pct'].quantile(0.2),
+                                                trend_data['pct'].quantile(0.8))
 
-        time_values = trend_data['last_weeks'].values.copy()
-        time_values.sort()
-        num = len(time_values)
-        result += '持续时间90%置信区间: {}~{}\n\n'.format(time_values[round(num * 0.05)], time_values[round(num * 0.95)])
-        result += '持续时间70%置信区间: {}~{}\n\n'.format(time_values[round(num * 0.15)], time_values[round(num * 0.85)])
+        result += '持续时间80%置信区间: {:.2f}~{:.2f}\n\n'.format(trend_data['last_weeks'].quantile(0.1),
+                                                  trend_data['last_weeks'].quantile(0.9))
+        result += '持续时间60%置信区间: {:.2f}~{:.2f}\n\n'.format(trend_data['last_weeks'].quantile(0.2),
+                                                  trend_data['last_weeks'].quantile(0.8))
 
         print('-------------------------------------------------------------------------------')
         print(result)
@@ -322,8 +270,8 @@ class Share:
         if not pct:
             print("以最后一波趋势统计")
             print(self.trend_data.iloc[-1])
-            pct = self.trend_data['pct'].iloc[-1]
-            time = self.trend_data['last_weeks'].iloc[-1]
+            pct = self.trend_data['pct'].iloc[-1].round(2)
+            time = self.trend_data['last_weeks'].iloc[-1].round(2)
 
         if pct > 0:
             print('上涨趋势统计')
@@ -345,18 +293,18 @@ class Share:
         result_str = '非融合趋势中:\n'
 
         # 根据统计，幅度增加的可能性
-        potability = kp2dig(len(result_trend_data[0]) / len(trend_data))
-        result_str += '幅度 > {}% 的概率 {}%\n'.format(pct, potability)
+        potability = two_digit_percent(len(result_trend_data[0]) / len(trend_data))
+        result_str += '幅度 > {:.2f}% 的概率 {:.2f}%\n'.format(pct, potability)
         result_str += str(result_trend_data[0]) + '\n'
 
         # 根据统计，时长增加的可能性
-        potability = kp2dig(len(result_trend_data[1]) / len(trend_data))
-        result_str += '持续时长 > {}周的概率 {}%\n'.format(time, potability)
+        potability = two_digit_percent(len(result_trend_data[1]) / len(trend_data))
+        result_str += '持续时长 > {:.2f}周的概率 {:.2f}%\n'.format(time, potability)
         result_str += str(result_trend_data[1]) + '\n'
 
         # 上涨猛烈程度评判,只能用来短期是否有反抽之类，没有太大用
-        potability = kp2dig(len(result_trend_data[2]) / len(trend_data))
-        result_str += '{}周内上涨幅度 >= {}%的概率: {} %\n'.format(time, pct, potability)
+        potability = two_digit_percent(len(result_trend_data[2]) / len(trend_data))
+        result_str += '{:.2f}周内上涨幅度 >= {:.2f}%的概率: {:.2f} %\n'.format(time, pct, potability)
         result_str += str(result_trend_data[2]) + '\n'
 
         print('-------------------------------------------------------------------------------')
@@ -412,7 +360,7 @@ class Share:
         # self.temp_data = lines
         # k线在趋势中的位置
         lines['in_trend_pos'] = lines.index.map(
-            lambda x: kp2dig(
+            lambda x: two_digit_percent(
                 (x - lines['start_d_index'][x]) / (lines['end_d_index'][x] - lines['start_d_index'][x])))
         lines.fillna(0, inplace=True)
 
@@ -451,7 +399,7 @@ class Share:
 if __name__ == '__main__':
     # use_proxy()
 
-    share = Share('sh')
+    share = Share('600016')
     # 上证指数的周线系数可用度较高
     # share.set_judge_condition(1, 2, 6, -1, 2, -6)
     # share.set_judge_condition(1, 2, 15, -1, 2, -15)

@@ -1,3 +1,5 @@
+import json
+import os
 import sys
 from datetime import datetime
 from time import sleep
@@ -6,76 +8,118 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import matplotlib.dates as mdates
+import tushare as ts
+import urllib.request
 
-sys.path.append("..")
-from tools import share_statistic
-
-
-def coefficient_correlation(compare_shares, st=None, ed=None, columns='pct_chg', names=[]):
-    compare_shares = list(compare_shares)
-    t = compare_shares[0][['date', columns]]
-    if st:
-        t = t[t['date'] >= st]
-    if ed:
-        t = t[t['date'] <= ed]
-
-    # 这里转换会导致merge失败
-    # t['date'] = t['date'].apply(lambda date_str: datetime.strptime(date_str, '%Y-%m-%d').date())
-    t.rename(columns={columns: columns + '_0'}, inplace=True)
-    for i in range(1, len(compare_shares)):
-        compare_shares[i] = compare_shares[i][['date', columns]]
-        compare_shares[i].rename(columns={columns: '{}_{}'.format(columns, i)}, inplace=True)
-        t = pd.merge(t, compare_shares[i], on='date')
-
-    for i in range(1, len(compare_shares)):
-        t['{}-{}'.format(0, i)] = t[columns + '_0'].rolling(20).corr(t['{}_{}'.format(columns, i)])
-
-    corr = t[['{}-{}'.format(0, i) for i in range(1, len(compare_shares))] + ['date']]
-    corr['date'] = corr['date'].apply(lambda date_str: datetime.strptime(date_str, '%Y-%m-%d').date())
-    ax = corr.plot(x='date')
-    ax.xaxis.set_minor_formatter(mdates.DateFormatter('%Y-%m-%d'))
-
-    if names:
-        ax.legend(['{}-{}'.format(names[0], names[i]) for i in range(1, len(names))])
-    return t
+# 洞房财富的接口
+EAST_MONEY_URL = 'http://push2his.eastmoney.com/api/qt/stock/kline/get?fields1=f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f61&beg=0&end=20500101&rtntype=6&secid={}.{}&klt={}&fqt={}'
+# turnover成交额， turnover_rate换手率
+EAST_MONEY_COLUMNS = ['date', 'open', 'close', 'high', 'low', 'volume', 'turnover', 'amplitude ', 'pct_chg',
+                      'turnover_rate']
 
 
-def relative_growth(compare_shares, st=None, ed=None, columns='close', names=[]):
-    compare_shares = list(compare_shares)
-    t = compare_shares[0][['date', columns]]
-    if st:
-        t = t[t['date'] >= st]
-    if ed:
-        t = t[t['date'] <= ed]
+def use_proxy():
+    HTTP_PROXY = "http_proxy"
+    HTTPS_PROXY = "https_proxy"
+    os.environ[HTTP_PROXY] = "cn-proxy.jp.oracle.com:80"
+    os.environ[HTTPS_PROXY] = "cn-proxy.jp.oracle.com:80"
+    print(os.environ["http_proxy"])
+    print(os.environ["https_proxy"])
 
-    # 这个会导致merge失败
-    # t['date'] = t['date'].apply(lambda date_str: datetime.strptime(date_str, '%Y-%m-%d').date())
-    t.rename(columns={columns: columns + '_0'}, inplace=True)
-    for i in range(1, len(compare_shares)):
-        compare_shares[i] = compare_shares[i][['date', columns]]
-        compare_shares[i].rename(columns={columns: '{}_{}'.format(columns, i)}, inplace=True)
-        t = pd.merge(t, compare_shares[i], on='date')
 
-    for i in range(len(compare_shares)):
-        t['cum_{}_{}'.format(columns, i)] = t['close_' + str(i)] / t['close_' + str(i)][t.index[0]] - 1
-        t['cum_{}_{}'.format(columns, i)].map(share_statistic.kp2dig)
+# 不复权，或者指数使用图share，否则使用洞房财富
+def get_k_data(code, k_type='bfq'):
+    if k_type == 'bfq' or code == 'sh' or code == 'sz' or code == 'cyb':
+        return get_and_cache_with_tushare(code)
+    else:
+        return get_and_cache_with_dfcf(code)
 
-    cum = t[['cum_{}_{}'.format(columns, i) for i in range(len(compare_shares))] + ['date']]
-    cum['date'] = cum['date'].apply(lambda date_str: datetime.strptime(date_str, '%Y-%m-%d').date())
-    ax = cum.plot(x='date')
-    ax.xaxis.set_minor_formatter(mdates.DateFormatter('%Y-%m-%d'))
-    if names:
-        ax.legend(names)
-    return t
 
-def generate_data(codes):
-    data = []
-    for code in codes:
-        t = share_statistic.get_and_cache_k_date(code)
-        data.append(t[0])
-    return data
+# tushare获取主要用于不复权数据
+def get_and_cache_with_tushare(code):
+    # 获取，并缓存
+    if not os.path.exists('data'):
+        os.mkdir('data')
+    today = datetime.now().strftime(("%Y-%m-%d"))
+    today_folder = "data\\" + today
+    if not os.path.exists(today_folder):
+        os.mkdir(today_folder)
+    if os.path.exists(today_folder + '\\' + code + '_0_d') and \
+            os.path.exists(today_folder + '\\' + code + '_0_w') and \
+            os.path.exists(today_folder + '\\' + code + '_0_m'):
+        print("read from csv")
+        ori_data_d = pd.read_csv(today_folder + '\\' + code + '_0_d')
+        ori_data_w = pd.read_csv(today_folder + '\\' + code + '_0_w')
+        ori_data_m = pd.read_csv(today_folder + '\\' + code + '_0_m')
+
+    else:
+        ori_data_m = ts.get_k_data(code, ktype='M', autype='bfq', index=False,
+                                   start='2001-01-01', end=today)
+        sleep(0.3)
+        ori_data_w = ts.get_k_data(code, ktype='W', autype='bfq', index=False,
+                                   start='2001-01-01', end=today)
+        sleep(0.3)
+        ori_data_d = ts.get_k_data(code, ktype='D', autype='bfq', index=False,
+                                   start='2001-01-01', end=today)
+        sleep(0.3)
+        if len(ori_data_m) > 10:
+            ori_data_d.to_csv(today_folder + '\\' + code + '_0_d')
+            ori_data_w.to_csv(today_folder + '\\' + code + '_0_w')
+            ori_data_m.to_csv(today_folder + '\\' + code + '_0_m')
+
+    for data in [ori_data_m, ori_data_w, ori_data_d]:
+        data['pct_chg'] = data['close'].pct_change().fillna(0).map(two_digit_percent)
+    return [ori_data_d, ori_data_w, ori_data_m]
+
+
+# 两位小数百分比
+def two_digit_percent(number):
+    return round(number, 4) * 100
+
+
+# 东方财富主要用于复权数据，tushare复权数据有问题
+def get_and_cache_with_dfcf(code: str):
+    if not os.path.exists('data'):
+        os.mkdir('data')
+    today = datetime.now().strftime(("%Y-%m-%d"))
+    today_folder = "data\\" + today
+    if not os.path.exists(today_folder):
+        os.mkdir(today_folder)
+    if os.path.exists(today_folder + '\\' + code + '_1_d') and \
+            os.path.exists(today_folder + '\\' + code + '_1_w') and \
+            os.path.exists(today_folder + '\\' + code + '_1_m'):
+        print("read from csv")
+        ori_data_d = pd.read_csv(today_folder + '\\' + code + '_1_d')
+        ori_data_w = pd.read_csv(today_folder + '\\' + code + '_1_w')
+        ori_data_m = pd.read_csv(today_folder + '\\' + code + '_1_m')
+        ans = [ori_data_d, ori_data_w, ori_data_m]
+
+    else:
+        ans = []
+        if code.startswith('600'):
+            sect_id = 1
+        else:
+            sect_id = 0
+        # 默认前复权
+        fqt = 1
+        for klt in [101, 102, 103]:
+            url = EAST_MONEY_URL.format(sect_id, code, klt, fqt)
+            with urllib.request.urlopen(url) as req:
+                # 返回的是多重嵌套字典
+                json_data = json.load(req)
+            k_lines_data = [data.split(',') for data in json_data['data']['klines']]
+            data = pd.DataFrame(k_lines_data, columns=EAST_MONEY_COLUMNS)
+            data[EAST_MONEY_COLUMNS[1:]] = data[EAST_MONEY_COLUMNS[1:]].astype(float)
+            ans.append(data)
+
+            sleep(0.5)
+
+        ans[0].to_csv(today_folder + '\\' + code + '_1_d')
+        ans[1].to_csv(today_folder + '\\' + code + '_1_w')
+        ans[2].to_csv(today_folder + '\\' + code + '_1_m')
+
+    return ans
+
+
 if __name__ == '__main__':
-    codes = ['601186', '600510', 'sh', 'cyb']
-    data = generate_data(codes)
-    coefficient_correlation(data, st='2019-01-10', names=codes)
-    relative_growth(data, st='2019-01-10', names=codes)
+    t = get_and_cache_with_dfcf('600016')
