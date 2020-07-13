@@ -6,17 +6,12 @@ from django.http import HttpResponseRedirect
 import time
 
 # Create your views here.
-dbrefreshed = False
 
 def homepage(request):
 	return render(request, 'tshare/home.html',{})
 
 #html response
 def trade_report(request):
-    global dbrefreshed
-    if dbrefreshed == False:
-        dbtools.refresh_k_data('k_bfq',)
-        dbrefreshed = True
     data = {}
     try:
         st_date = request.GET['st_date']

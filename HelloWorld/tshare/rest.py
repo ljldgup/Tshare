@@ -8,12 +8,13 @@ import sys
 sys.path.append("..")
 from tools import share_statistic
 from tools import trade_analysis
+from tools import commom_tools
 
-dbrefreshed = False
+# 每次启动时把db里数据清一下，因为日期可能不是最新的
+trade_analysis.store_trade()
 
 
 def delete_note(request):
-    data = {}
     try:
         r_stamp = request.GET['r_stamp']
         tmd.Note.objects.filter(t_stamp=r_stamp).delete()
@@ -36,7 +37,6 @@ def note_json(request):
                 note_list.append([i.t_stamp, i.t_name, i.t_type, i.t_date, i.t_content])
             except Exception as e:
                 print(e)
-
 
     except Exception as be:
         print(be)
@@ -67,14 +67,11 @@ def note_json(request):
 
 # 注意这里是不复权的k线数据，为了匹配买卖情况
 def k_data_json(request, r_code):
-    # store_k_data to tmp table
-    dbtools.storekdata(r_code)
-    k_data = tmd.K_days.objects.filter(code=r_code)
-    k_list = []
-    for i in k_data:
-        k_list.append([str(i.date), i.open, i.close, i.low, i.high, i.volume])
+    # 先检测后存储
+    k_data = commom_tools.get_k_data(r_code)
+    k_data = k_data[0][['date', 'open', 'close', 'low', 'high', 'volume']].values.tolist()
 
-    return JsonResponse(k_list, safe=False)
+    return JsonResponse(k_data, safe=False)
 
 
 def ori_trade_data_json(request):
@@ -87,11 +84,6 @@ def ori_trade_data_json(request):
 
 
 def trade_data_json(request):
-    global dbrefreshed
-    if dbrefreshed == False:
-        trade_analysis.store_trade()
-        dbrefreshed = True
-
     # store_k_data to tmp table
     stat_data = tmd.StatisticTradeData.objects.all().order_by('o_date')
 
@@ -115,11 +107,13 @@ def trade_data_json(request):
 
     stat_list = []
     for i in stat_data:
-        stat_list.append([i.code, i.name, str(i.i_date), str(i.o_date), i.i_total, i.time, i.earning, i.pct])
+        # 这里从sqlite取出的数据有精度问题，但sqlite数据库中数据是没问题的所以应该是db映射框架有问题,使用round进行截断
+        # print(i.pct)
+        stat_list.append([i.code, i.name, str(i.i_date), str(i.o_date), i.i_total, i.time, i.earning, round(i.pct, 2)])
     return JsonResponse(stat_list, safe=False)
 
 
-# 趋势数据
+# 前复权数据，趋势数据
 def trend_data_json(request, r_code):
     share = share_statistic.Share(r_code)
 
