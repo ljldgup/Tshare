@@ -11,7 +11,12 @@ import matplotlib.dates as mdates
 import tushare as ts
 import urllib.request
 
-# 洞房财富的接口
+'''
+fields1是data下的数据属性，fields2是klines中的具体数据类型
+fqt 0不复权,1前复权，2后复权， 
+klt=101 日线 102周线 103月线线
+secid 深市0，沪市1，如secid=1.600016 secid=0.002583 secid=0.300124
+'''
 EAST_MONEY_URL = 'http://push2his.eastmoney.com/api/qt/stock/kline/get?fields1=f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f61&beg=0&end=20500101&rtntype=6&secid={}.{}&klt={}&fqt={}'
 # turnover成交额， turnover_rate换手率
 EAST_MONEY_COLUMNS = ['date', 'open', 'close', 'high', 'low', 'volume', 'turnover', 'amplitude ', 'pct_chg',

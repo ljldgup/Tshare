@@ -42,9 +42,9 @@ class Share:
 
         # 默认上涨下跌判断条件
         if code == 'sh' or code == 'sz' or code == 'cyb':
-            self.set_judge_condition(0.5, 4, 6, -1, 3, -6)
+            self.set_judge_condition(0.1, 4, 6, -0.1, 4, -6)
         else:
-            self.set_judge_condition(0.5, 4, 15, -3, 3, -15)
+            self.set_judge_condition(0.1, 4, 15, -0.1, 4, -15)
 
     def set_judge_condition(self, up_start_pct, up_last_times, up_pct, down_start_pct, down_last_times, down_pct):
         # 上涨，下跌开始判定涨跌比百分率，持续周，合格百分比波动
@@ -64,7 +64,6 @@ class Share:
 
         self.ori_data_w.index = self.ori_data_w.index - self.ori_data_w.index[0]
         # 从初始数据中提取每周日期，收盘价，涨跌幅
-        pd.DataFrame(columns=['date', 'open', 'close', 'pct_chg', 'volume'])
         self.bas_data = self.ori_data_w[['date', 'open', 'close', 'pct_chg', 'volume']]
         return self.bas_data
 
@@ -127,8 +126,12 @@ class Share:
             if end_w_index != i:
                 # print('{0},{1},{2},{3}'.format(i,tmp_index,data.date[i],data.date[tmp_index]))
                 # 注意是前一周的收盘价，不是当前周的开盘价，涨跌幅都是收盘价算的
+                if i != data.index[0]:
+                    pct = two_digit_percent(data['close'][end_w_index] / data['close'][i - 1] - 1)
+                else:
+                    # 如果是第一个k线就用当周开盘价
+                    pct = two_digit_percent(data['close'][end_w_index] / data['open'][i] - 1)
 
-                pct = two_digit_percent(data['close'][end_w_index] / data['open'][i] - 1)
                 # print('{0},{1},{2}'.format(beg_price,end_price,pct))
 
                 if pct > self.up_pct or pct < self.down_pct:
@@ -252,15 +255,15 @@ class Share:
 
         print('根据均线趋势情况选择置信区间')
         # quantile分位数函数
-        result += '幅度80%置信区间: {:.2f}~{:.2f}\n\n'.format(trend_data['pct'].quantile(0.1),
-                                                trend_data['pct'].quantile(0.9))
-        result += '幅度60%置信区间: {:.2f}~{:.2f}\n\n'.format(trend_data['pct'].quantile(0.2),
-                                                trend_data['pct'].quantile(0.8))
+        result += '幅度90%置信区间: {:.2f}~{:.2f}\n'.format(trend_data['pct'].quantile(0.05),
+                                                trend_data['pct'].quantile(0.95))
+        result += '幅度70%置信区间: {:.2f}~{:.2f}\n'.format(trend_data['pct'].quantile(0.15),
+                                                trend_data['pct'].quantile(0.85))
 
-        result += '持续时间80%置信区间: {:.2f}~{:.2f}\n\n'.format(trend_data['last_weeks'].quantile(0.1),
-                                                  trend_data['last_weeks'].quantile(0.9))
-        result += '持续时间60%置信区间: {:.2f}~{:.2f}\n\n'.format(trend_data['last_weeks'].quantile(0.2),
-                                                  trend_data['last_weeks'].quantile(0.8))
+        result += '持续时间90%置信区间: {:.2f}~{:.2f}\n'.format(trend_data['last_weeks'].quantile(0.05),
+                                                  trend_data['last_weeks'].quantile(0.95))
+        result += '持续时间70%置信区间: {:.2f}~{:.2f}\n'.format(trend_data['last_weeks'].quantile(0.15),
+                                                  trend_data['last_weeks'].quantile(0.85))
 
         print('-------------------------------------------------------------------------------')
         print(result)
@@ -399,7 +402,7 @@ class Share:
 if __name__ == '__main__':
     # use_proxy()
 
-    share = Share('600016')
+    share = Share('sh')
     # 上证指数的周线系数可用度较高
     # share.set_judge_condition(1, 2, 6, -1, 2, -6)
     # share.set_judge_condition(1, 2, 15, -1, 2, -15)
