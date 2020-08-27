@@ -32,12 +32,13 @@ def use_proxy():
     print(os.environ["https_proxy"])
 
 
-# 不复权，或者指数使用图share，否则使用洞房财富
+# 不复权，或者指数使用tshare，否则使用洞房财富
+# 全部用东方财富
 def get_k_data(code, k_type='bfq'):
-    if k_type == 'bfq' or code == 'sh' or code == 'sz' or code == 'cyb':
-        return get_and_cache_with_tushare(code)
-    else:
-        return get_and_cache_with_dfcf(code)
+    # if k_type == 'bfq' or code == 'sh' or code == 'sz' or code == 'cyb':
+    #    return get_and_cache_with_tushare(code)
+    # else:
+    return get_and_cache_with_dfcf(code, k_type)
 
 
 # tushare获取主要用于不复权数据
@@ -83,30 +84,39 @@ def two_digit_percent(number):
 
 
 # 东方财富主要用于复权数据，tushare复权数据有问题
-def get_and_cache_with_dfcf(code: str):
+def get_and_cache_with_dfcf(code: str, k_type: str):
     if not os.path.exists('data'):
         os.mkdir('data')
     today = datetime.now().strftime(("%Y-%m-%d"))
     today_folder = "data\\" + today
     if not os.path.exists(today_folder):
         os.mkdir(today_folder)
-    if os.path.exists(today_folder + '\\' + code + '_1_d') and \
-            os.path.exists(today_folder + '\\' + code + '_1_w') and \
-            os.path.exists(today_folder + '\\' + code + '_1_m'):
+    if os.path.exists(today_folder + '\\' + code + '_1_d' + k_type) and \
+            os.path.exists(today_folder + '\\' + code + '_1_w' + k_type) and \
+            os.path.exists(today_folder + '\\' + code + '_1_m' + k_type):
         print("read from csv")
-        ori_data_d = pd.read_csv(today_folder + '\\' + code + '_1_d')
-        ori_data_w = pd.read_csv(today_folder + '\\' + code + '_1_w')
-        ori_data_m = pd.read_csv(today_folder + '\\' + code + '_1_m')
+        ori_data_d = pd.read_csv(today_folder + '\\' + code + '_1_d' + k_type)
+        ori_data_w = pd.read_csv(today_folder + '\\' + code + '_1_w' + k_type)
+        ori_data_m = pd.read_csv(today_folder + '\\' + code + '_1_m' + k_type)
         ans = [ori_data_d, ori_data_w, ori_data_m]
 
     else:
         ans = []
-        if code.startswith('600'):
+        if code == 'sh':
+            sect_id = 1
+            code = '000001'
+        elif code == 'sz':
+            sect_id = 0
+            code = '399001'
+        elif code == 'cyb':
+            sect_id = 0
+            code = '399006'
+        elif code.startswith('600'):
             sect_id = 1
         else:
             sect_id = 0
         # 默认前复权
-        fqt = 1
+        fqt = {'bfq': 0, 'qfq': 1, 'hfq': 2}[k_type]
         for klt in [101, 102, 103]:
             url = EAST_MONEY_URL.format(sect_id, code, klt, fqt)
             with urllib.request.urlopen(url) as req:
@@ -119,12 +129,14 @@ def get_and_cache_with_dfcf(code: str):
 
             sleep(0.5)
 
-        ans[0].to_csv(today_folder + '\\' + code + '_1_d')
-        ans[1].to_csv(today_folder + '\\' + code + '_1_w')
-        ans[2].to_csv(today_folder + '\\' + code + '_1_m')
+        ans[0].to_csv(today_folder + '\\' + code + '_1_d' + k_type)
+        ans[1].to_csv(today_folder + '\\' + code + '_1_w' + k_type)
+        ans[2].to_csv(today_folder + '\\' + code + '_1_m' + k_type)
 
     return ans
 
 
 if __name__ == '__main__':
-    t = get_and_cache_with_dfcf('600016')
+    t = get_and_cache_with_dfcf('sh', 'qfq')
+    t = get_and_cache_with_dfcf('600016', 'qfq')
+    t = get_and_cache_with_dfcf('600016', 'bfq')
