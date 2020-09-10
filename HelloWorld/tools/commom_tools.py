@@ -34,7 +34,7 @@ def use_proxy():
 
 # 不复权，或者指数使用tshare，否则使用洞房财富
 # 全部用东方财富
-def get_k_data(code, k_type='bfq'):
+def get_k_data(code, k_type):
     # if k_type == 'bfq' or code == 'sh' or code == 'sz' or code == 'cyb':
     #    return get_and_cache_with_tushare(code)
     # else:
@@ -43,20 +43,19 @@ def get_k_data(code, k_type='bfq'):
 
 # tushare获取主要用于不复权数据
 def get_and_cache_with_tushare(code):
-    # 获取，并缓存
-    if not os.path.exists('data'):
-        os.mkdir('data')
+    cache_folder = 'cached_data'
+    if not os.path.exists(cache_folder):
+        os.mkdir(cache_folder)
     today = datetime.now().strftime(("%Y-%m-%d"))
-    today_folder = "data\\" + today
-    if not os.path.exists(today_folder):
-        os.mkdir(today_folder)
-    if os.path.exists(today_folder + '\\' + code + '_0_d') and \
-            os.path.exists(today_folder + '\\' + code + '_0_w') and \
-            os.path.exists(today_folder + '\\' + code + '_0_m'):
+    if not os.path.exists(cache_folder):
+        os.mkdir(cache_folder)
+    if os.path.exists(cache_folder + '\\' + code + '_0_d') and \
+            os.path.exists(cache_folder + '\\' + code + '_0_w') and \
+            os.path.exists(cache_folder + '\\' + code + '_0_m'):
         print("read from csv")
-        ori_data_d = pd.read_csv(today_folder + '\\' + code + '_0_d')
-        ori_data_w = pd.read_csv(today_folder + '\\' + code + '_0_w')
-        ori_data_m = pd.read_csv(today_folder + '\\' + code + '_0_m')
+        ori_data_d = pd.read_csv(cache_folder + '\\' + code + '_0_d')
+        ori_data_w = pd.read_csv(cache_folder + '\\' + code + '_0_w')
+        ori_data_m = pd.read_csv(cache_folder + '\\' + code + '_0_m')
 
     else:
         ori_data_m = ts.get_k_data(code, ktype='M', autype='bfq', index=False,
@@ -69,9 +68,9 @@ def get_and_cache_with_tushare(code):
                                    start='2001-01-01', end=today)
         sleep(0.3)
         if len(ori_data_m) > 10:
-            ori_data_d.to_csv(today_folder + '\\' + code + '_0_d')
-            ori_data_w.to_csv(today_folder + '\\' + code + '_0_w')
-            ori_data_m.to_csv(today_folder + '\\' + code + '_0_m')
+            ori_data_d.to_csv(cache_folder + '\\' + code + '_0_d')
+            ori_data_w.to_csv(cache_folder + '\\' + code + '_0_w')
+            ori_data_m.to_csv(cache_folder + '\\' + code + '_0_m')
 
     for data in [ori_data_m, ori_data_w, ori_data_d]:
         data['pct_chg'] = data['close'].pct_change().fillna(0).map(two_digit_percent)
@@ -85,19 +84,16 @@ def two_digit_percent(number):
 
 # 东方财富主要用于复权数据，tushare复权数据有问题
 def get_and_cache_with_dfcf(code: str, k_type: str):
-    if not os.path.exists('data'):
-        os.mkdir('data')
-    today = datetime.now().strftime(("%Y-%m-%d"))
-    today_folder = "data\\" + today
-    if not os.path.exists(today_folder):
-        os.mkdir(today_folder)
-    if os.path.exists(today_folder + '\\' + code + '_1_d' + k_type) and \
-            os.path.exists(today_folder + '\\' + code + '_1_w' + k_type) and \
-            os.path.exists(today_folder + '\\' + code + '_1_m' + k_type):
+    cache_folder = 'cached_data'
+    if not os.path.exists(cache_folder):
+        os.mkdir(cache_folder)
+    if os.path.exists(cache_folder + '\\' + code + '_1_d' + k_type) and \
+            os.path.exists(cache_folder + '\\' + code + '_1_w' + k_type) and \
+            os.path.exists(cache_folder + '\\' + code + '_1_m' + k_type):
         print("read from csv")
-        ori_data_d = pd.read_csv(today_folder + '\\' + code + '_1_d' + k_type)
-        ori_data_w = pd.read_csv(today_folder + '\\' + code + '_1_w' + k_type)
-        ori_data_m = pd.read_csv(today_folder + '\\' + code + '_1_m' + k_type)
+        ori_data_d = pd.read_csv(cache_folder + '\\' + code + '_1_d' + k_type)
+        ori_data_w = pd.read_csv(cache_folder + '\\' + code + '_1_w' + k_type)
+        ori_data_m = pd.read_csv(cache_folder + '\\' + code + '_1_m' + k_type)
         ans = [ori_data_d, ori_data_w, ori_data_m]
 
     else:
@@ -129,9 +125,9 @@ def get_and_cache_with_dfcf(code: str, k_type: str):
 
             sleep(0.5)
 
-        ans[0].to_csv(today_folder + '\\' + code + '_1_d' + k_type)
-        ans[1].to_csv(today_folder + '\\' + code + '_1_w' + k_type)
-        ans[2].to_csv(today_folder + '\\' + code + '_1_m' + k_type)
+        ans[0].to_csv(cache_folder + '\\' + code + '_1_d' + k_type)
+        ans[1].to_csv(cache_folder + '\\' + code + '_1_w' + k_type)
+        ans[2].to_csv(cache_folder + '\\' + code + '_1_m' + k_type)
 
     return ans
 
