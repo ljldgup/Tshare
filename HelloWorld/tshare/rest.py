@@ -4,8 +4,6 @@ from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
 from . import dbtools
 
 import sys
-
-sys.path.append("..")
 from tools import share_statistic
 from tools import trade_analysis
 from tools import commom_tools
@@ -68,7 +66,7 @@ def note_json(request):
 # 注意这里是不复权的k线数据，为了匹配买卖情况
 def k_data_json(request, r_code):
     # 先检测后存储
-    k_data = commom_tools.get_k_data(r_code)
+    k_data = commom_tools.get_k_data(r_code, 'bfq')
     k_data = k_data[0][['date', 'open', 'close', 'low', 'high', 'volume']].values.tolist()
 
     return JsonResponse(k_data, safe=False)
