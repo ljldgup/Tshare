@@ -13,9 +13,10 @@ import numpy as np
 import pandas as pd
 import tushare as ts
 
-# 支持中文
+# tools 报错把 外层Helloworld 文件夹 右键 make directory as -> source root
 from tools.commom_tools import two_digit_percent, get_k_data
 
+# 支持中文
 plt.rcParams['font.sans-serif'] = ['KaiTi']  # 用来正常显示中文标签
 plt.rcParams['axes.unicode_minus'] = False  # 用来正常显示负号
 

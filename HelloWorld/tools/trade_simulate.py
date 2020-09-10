@@ -5,7 +5,9 @@ import pandas as pd
 # 由于tushare的前复权数据有严重计算错误问题，这里考虑直接手动从东方财富后台拉数据
 # 一般而言打开日k后，后台传输数据最大的就是日k，url一般是js?token=....
 # 点开响应，等待片刻，复制其中data的数据，保存为[..]格式，文件名为股票代码
-from HelloWorld.tools.commom_tools import get_k_data
+
+# tools 报错把 外层Helloworld 文件夹 右键 make directory as -> source root
+from tools.commom_tools import get_k_data
 
 
 def data_process(code):

@@ -1,9 +1,7 @@
 from . import models as tmd
 from datetime import datetime
 from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
-from . import dbtools
 
-import sys
 from tools import share_statistic
 from tools import trade_analysis
 from tools import commom_tools
