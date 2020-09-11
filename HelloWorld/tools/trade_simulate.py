@@ -91,11 +91,11 @@ def data_retreatment(data):
         data['rsi_{}'.format(n)] = a / (a + b) * 100
 
     # bolling 线
-    MA = data['close'].rolling(20).mean()
-    MD = data['close'].rolling(20).std()  # ddof代表标准差自由度
+    ma = data['close'].rolling(20).mean()
+    md = data['close'].rolling(20).std()  # ddof代表标准差自由度
     # 计算上轨、下轨道
-    data['bolling_upper'] = MA + 2 * MD
-    data['bolling_lower'] = MA - 2 * MD
+    data['bolling_upper'] = ma + 2 * md
+    data['bolling_lower'] = ma - 2 * md
 
     # 乖离率
     # BIAS=(收盘价-收盘价的N日简单平均)/收盘价的N日简单平均*100
@@ -103,6 +103,8 @@ def data_retreatment(data):
         ma = data['close'].rolling(n).mean()
         data['bias_{}'.format(n)] = (data['close'] - ma) / ma * 100
 
+    # 自适应均线
+    # e = data['close'].diff(1).abs().rolling(60)
     return data
 
 
@@ -156,6 +158,53 @@ def trade_out(data, in_index, stop_loss_pct):
         # print(max_price, ' ', cost)
 
 
+# 以基础的止盈止损策略，判断能否盈利，不统计最终获利，但别的函数可以再次基础上再次计算，0失败，1成功，-1未知或无法买入，不计入
+# 注意这里是按章当天收盘价买入来算的，用软件算涨跌幅的时候要从第二天开始算，即8/8买入，应该从8/9开始算，8/8当天涨跌不算
+def trade_target(data, loss_pct, earning_pct):
+    trade_target = []
+    end_date = []
+    for in_index in data.index:
+        # 一字涨停无法买入
+        if data['pct_chg'].loc[in_index] > 9.9 and data['open'].loc[in_index] == data['close'].loc[in_index]:
+            trade_target.append(-1)
+            end_date.append(data['date'].loc[in_index])
+            continue
+
+        # 出入价位
+        earning_stop_price = data['close'].loc[in_index] * (1 + earning_pct / 100)
+        loss_stop_price = data['close'].loc[in_index] * (1 - loss_pct / 100)
+
+        # 根据止损止盈价位，提取出第一个满足要求的缩影
+        earning_index = data[(data['close'] > earning_stop_price) & (data.index > in_index)].index
+        loss_index = data[(data['close'] < loss_stop_price) & (data.index > in_index)].index
+
+        # 无法止损止盈
+        if earning_index.empty and loss_index.empty:
+            trade_target.append(-1)
+            end_date.append(data['date'].loc[in_index])
+        # 无法止盈
+        elif earning_index.empty and not loss_index.empty:
+            trade_target.append(0)
+            end_date.append(data['date'].loc[loss_index[0]])
+        # 无法止损
+        elif not earning_index.empty and loss_index.empty:
+            trade_target.append(1)
+            end_date.append(data['date'].loc[earning_index[0]])
+        #止损止盈均可选择时间近的
+        else:
+            if earning_index[0] < loss_index[0]:
+                trade_target.append(1)
+                end_date.append(data['date'].loc[earning_index[0]])
+            else:
+                trade_target.append(0)
+                end_date.append(data['date'].loc[loss_index[0]])
+
+    data['trade_target'] = trade_target
+    data['trade_target_end_date'] = end_date
+
+    return data
+
+
 def virtual_trade_statics(data, in_function, out_function):
     index = in_function(data)
     origin_index = []
@@ -186,10 +235,11 @@ def print_test(data):
     data[['date', 'rsi_12', 'rsi_24', 'rsi_48']][-300:-280]
     data[['date', 'k', 'd', 'j']][-300:-280]
     data[['date', 'bias_20', 'bias_60', 'bias_200']][-300:-280]
-
+    data[['date', 'open', 'close', 'pct_chg', 'trade_target', 'trade_target_end_date']][-40:]
 
 if __name__ == '__main__':
     # 前复权，不然技术指标没有意义
     data = get_k_data('300725', 'qfq')
     k_day_data = data_retreatment(data[0])
     # t = virtual_trade_statics(data, up_trade_in, trade_out)
+    k_day_data = trade_target(k_day_data, 10, 30)
