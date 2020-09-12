@@ -1,3 +1,7 @@
+
+"""
+后端拉取数据
+"""
 import json
 import os
 import sys
@@ -19,7 +23,7 @@ secid 深市0，沪市1，如secid=1.600016 secid=0.002583 secid=0.300124
 '''
 EAST_MONEY_URL = 'http://push2his.eastmoney.com/api/qt/stock/kline/get?fields1=f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f61&beg=0&end=20500101&rtntype=6&secid={}.{}&klt={}&fqt={}'
 # turnover成交额， turnover_rate换手率
-EAST_MONEY_COLUMNS = ['date', 'open', 'close', 'high', 'low', 'volume', 'turnover', 'amplitude ', 'pct_chg',
+EAST_MONEY_COLUMNS = ['date', 'open', 'close', 'high', 'low', 'volume', 'turnover', 'amplitude ', 'pct',
                       'turnover_rate']
 
 
@@ -34,47 +38,31 @@ def use_proxy():
 
 # 不复权，或者指数使用tshare，否则使用洞房财富
 # 全部用东方财富
-def get_k_data(code, k_type):
+def get_k_data(code, t_type, k_type):
     # if k_type == 'bfq' or code == 'sh' or code == 'sz' or code == 'cyb':
     #    return get_and_cache_with_tushare(code)
     # else:
-    return get_and_cache_with_dfcf(code, k_type)
+    return get_and_cache_with_dfcf(code, t_type, k_type)
 
 
 # tushare获取主要用于不复权数据
-def get_and_cache_with_tushare(code):
+def get_and_cache_with_tushare(code, t_type, k_type):
     cache_folder = 'cached_data'
     if not os.path.exists(cache_folder):
         os.mkdir(cache_folder)
     today = datetime.now().strftime(("%Y-%m-%d"))
-    if not os.path.exists(cache_folder):
-        os.mkdir(cache_folder)
-    if os.path.exists(cache_folder + '\\' + code + '_0_d') and \
-            os.path.exists(cache_folder + '\\' + code + '_0_w') and \
-            os.path.exists(cache_folder + '\\' + code + '_0_m'):
+    if os.path.exists('{}/{}_{}_{}'.format(cache_folder, code, t_type, k_type)):
         print("read from csv")
-        ori_data_d = pd.read_csv(cache_folder + '\\' + code + '_0_d')
-        ori_data_w = pd.read_csv(cache_folder + '\\' + code + '_0_w')
-        ori_data_m = pd.read_csv(cache_folder + '\\' + code + '_0_m')
+        ori_data = pd.read_csv('{}/{}_{}_{}'.format(cache_folder, code, t_type, k_type))
 
     else:
-        ori_data_m = ts.get_k_data(code, ktype='M', autype='bfq', index=False,
+        ori_data = ts.get_k_data(code, ktype=t_type, autype=k_type, index=False,
                                    start='2001-01-01', end=today)
-        sleep(0.3)
-        ori_data_w = ts.get_k_data(code, ktype='W', autype='bfq', index=False,
-                                   start='2001-01-01', end=today)
-        sleep(0.3)
-        ori_data_d = ts.get_k_data(code, ktype='D', autype='bfq', index=False,
-                                   start='2001-01-01', end=today)
-        sleep(0.3)
-        if len(ori_data_m) > 10:
-            ori_data_d.to_csv(cache_folder + '\\' + code + '_0_d')
-            ori_data_w.to_csv(cache_folder + '\\' + code + '_0_w')
-            ori_data_m.to_csv(cache_folder + '\\' + code + '_0_m')
+        if len(ori_data) > 10:
+            ori_data.to_csv('{}/{}_{}_{}'.format(cache_folder, code, t_type, k_type))
+        ori_data.pct_change().fillna(0).map(two_digit_percent)
 
-    for data in [ori_data_m, ori_data_w, ori_data_d]:
-        data['pct_chg'] = data['close'].pct_change().fillna(0).map(two_digit_percent)
-    return [ori_data_d, ori_data_w, ori_data_m]
+    return ori_data
 
 
 # 两位小数百分比
@@ -83,21 +71,15 @@ def two_digit_percent(number):
 
 
 # 东方财富主要用于复权数据，tushare复权数据有问题
-def get_and_cache_with_dfcf(code: str, k_type: str):
+def get_and_cache_with_dfcf(code: str, t_type: str, k_type: str):
     cache_folder = 'cached_data'
     if not os.path.exists(cache_folder):
         os.mkdir(cache_folder)
-    if os.path.exists(cache_folder + '\\' + code + '_1_d' + k_type) and \
-            os.path.exists(cache_folder + '\\' + code + '_1_w' + k_type) and \
-            os.path.exists(cache_folder + '\\' + code + '_1_m' + k_type):
+    if os.path.exists('{}/{}_{}_{}'.format(cache_folder, code, t_type, k_type)):
         print("read from csv")
-        ori_data_d = pd.read_csv(cache_folder + '\\' + code + '_1_d' + k_type)
-        ori_data_w = pd.read_csv(cache_folder + '\\' + code + '_1_w' + k_type)
-        ori_data_m = pd.read_csv(cache_folder + '\\' + code + '_1_m' + k_type)
-        ans = [ori_data_d, ori_data_w, ori_data_m]
+        data = pd.read_csv('{}/{}_{}_{}'.format(cache_folder, code, t_type, k_type))
 
     else:
-        ans = []
         if code == 'sh':
             sect_id = 1
             code = '000001'
@@ -113,23 +95,17 @@ def get_and_cache_with_dfcf(code: str, k_type: str):
             sect_id = 0
         # 默认前复权
         fqt = {'bfq': 0, 'qfq': 1, 'hfq': 2}[k_type]
-        for klt in [101, 102, 103]:
-            url = EAST_MONEY_URL.format(sect_id, code, klt, fqt)
-            with urllib.request.urlopen(url) as req:
-                # 返回的是多重嵌套字典
-                json_data = json.load(req)
-            k_lines_data = [data.split(',') for data in json_data['data']['klines']]
-            data = pd.DataFrame(k_lines_data, columns=EAST_MONEY_COLUMNS)
-            data[EAST_MONEY_COLUMNS[1:]] = data[EAST_MONEY_COLUMNS[1:]].astype(float)
-            ans.append(data)
+        klt = {'d': 101, 'w': 102, 'm': 103}[t_type]
+        url = EAST_MONEY_URL.format(sect_id, code, klt, fqt)
+        with urllib.request.urlopen(url) as req:
+            # 返回的是多重嵌套字典
+            json_data = json.load(req)
+        k_lines_data = [data.split(',') for data in json_data['data']['klines']]
+        data = pd.DataFrame(k_lines_data, columns=EAST_MONEY_COLUMNS)
+        data[EAST_MONEY_COLUMNS[1:]] = data[EAST_MONEY_COLUMNS[1:]].astype(float)
+        data.to_csv('{}/{}_{}_{}'.format(cache_folder, code, t_type, k_type))
 
-            sleep(0.5)
-
-        ans[0].to_csv(cache_folder + '\\' + code + '_1_d' + k_type)
-        ans[1].to_csv(cache_folder + '\\' + code + '_1_w' + k_type)
-        ans[2].to_csv(cache_folder + '\\' + code + '_1_m' + k_type)
-
-    return ans
+    return data
 
 
 if __name__ == '__main__':

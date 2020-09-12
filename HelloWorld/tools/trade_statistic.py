@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sun Aug  5 00:18:51 2018
-
-@author: ljl
+用于统计交易盈亏，频率等
 """
 import os, sys
 

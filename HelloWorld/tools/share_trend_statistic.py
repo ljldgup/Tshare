@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Spyder Editor
-
-This is a temporary script file.
+用于统计股票中长期趋势，k线分布
 """
 import datetime
 import os
@@ -31,11 +29,11 @@ def get_monday(end_pos):
 class Share:
     # 上行趋势起始判断涨幅，多少个周期数内未创新稿就结束，涨幅
     up_start_pct = 2
-    up_last_times = 4
+    up_last_periods = 4
     up_pct = 10
 
     down_start_pct = 2
-    down_last_times = 4
+    down_last_periods = 4
     down_pct = 10
 
     def __init__(self, code):
@@ -47,42 +45,42 @@ class Share:
         else:
             self.set_judge_condition(0.1, 4, 15, -0.1, 4, -15)
 
-    def set_judge_condition(self, up_start_pct, up_last_times, up_pct, down_start_pct, down_last_times, down_pct):
+    def set_judge_condition(self, up_start_pct, up_last_periods, up_pct, down_start_pct, down_last_periods, down_pct):
         # 上涨，下跌开始判定涨跌比百分率，持续周，合格百分比波动
         # 上涨，下跌微创新低则结束的判定周期次数
         self.up_start_pct = up_start_pct
-        self.up_last_times = up_last_times
+        self.up_last_periods = up_last_periods
         self.up_pct = up_pct
         self.down_start_pct = down_start_pct
-        self.down_last_times = down_last_times
+        self.down_last_periods = down_last_periods
         self.down_pct = down_pct
 
     # 获取原始数据self.ori_data, 经过加工的基本数据self.bas_data
     def get_bas_dat(self):
         # 获取原始数据
 
-        self.ori_data_d, self.ori_data_w, self.ori_data_m = get_k_data(self.code,'qfq')
-
+        self.ori_data_w = get_k_data(self.code, 'w', 'qfq')
+        self.ori_data_d = get_k_data(self.code, 'd', 'qfq')
         self.ori_data_w.index = self.ori_data_w.index - self.ori_data_w.index[0]
         # 从初始数据中提取每周日期，收盘价，涨跌幅
-        self.bas_data = self.ori_data_w[['date', 'open', 'close', 'pct_chg', 'volume']]
+        self.bas_data = self.ori_data_w[['date', 'open', 'close', 'pct']]
         return self.bas_data
 
     # 统计上涨或下跌的趋势维持的时长
     # 返回结束的Index，如果不合格则返回值与输入相同
     def trend_judge(self, data, beg_index):
 
-        begin_pct = data['pct_chg'][beg_index]
+        begin_pct = data['pct'][beg_index]
         cur_index = beg_index
         peak_index = beg_index
 
         # 确定涨跌
         if begin_pct > 0:
-            last_times = self.up_last_times
+            last_times = self.up_last_periods
             judge = lambda x, y: x > y
 
         else:
-            last_times = self.down_last_times
+            last_times = self.down_last_periods
             judge = lambda x, y: x < y
             self.former_down = beg_index
 
@@ -114,10 +112,10 @@ class Share:
         data = self.bas_data
         # 提取上升下降趋势的维持时间，涨幅
         # 开始时间，上升幅度，持续周数
-        trend_data = pd.DataFrame(columns=['start_pos', 'end_pos', 'pct', 'last_weeks', 'open', 'close',
+        trend_data = pd.DataFrame(columns=['start_pos', 'end_pos', 'pct', 'last_periods', 'open', 'close',
                                            'start_w_index', 'end_w_index'])
         # 提取大于3%的涨幅，作为上涨趋势的初期的突破趋势,该幅度可调整
-        up_pct_index = data.query('pct_chg > {0} or pct_chg < {1}'.format(self.up_start_pct, self.down_start_pct))
+        up_pct_index = data.query('pct > {0} or pct < {1}'.format(self.up_start_pct, self.down_start_pct))
 
         index = 0
         i = up_pct_index.index[0]
@@ -128,10 +126,10 @@ class Share:
                 # print('{0},{1},{2},{3}'.format(i,tmp_index,data.date[i],data.date[tmp_index]))
                 # 注意是前一周的收盘价，不是当前周的开盘价，涨跌幅都是收盘价算的
                 if i != data.index[0]:
-                    pct = two_digit_percent(data['close'][end_w_index] / data['close'][i - 1] - 1)
+                    pct = 100 * (data['close'][end_w_index] / data['close'][i - 1] - 1)
                 else:
                     # 如果是第一个k线就用当周开盘价
-                    pct = two_digit_percent(data['close'][end_w_index] / data['open'][i] - 1)
+                    pct = 100 * (data['close'][end_w_index] / data['open'][i] - 1)
 
                 # print('{0},{1},{2}'.format(beg_price,end_price,pct))
 
@@ -147,7 +145,8 @@ class Share:
             except:
                 i = up_pct_index.index[-1] + 1
 
-            trend_data['last_weeks'] = trend_data['last_weeks'].astype(float)
+            trend_data['last_periods'] = trend_data['last_periods'].astype(float)
+        trend_data['pct'] = trend_data['pct'].round(decimals=2)
         self.trend_data = trend_data
 
     # 融合的大趋势, 获得次级回调趋势
@@ -158,11 +157,11 @@ class Share:
         # space_pct折返幅度占之前的比例
         # time_pct折返持续时间占之前的比例
 
-        secondary_trend = pd.DataFrame(columns=['start_pos', 'end_pos', 'pct', 'last_weeks', 'open', 'close',
+        secondary_trend = pd.DataFrame(columns=['start_pos', 'end_pos', 'pct', 'last_periods', 'open', 'close',
                                                 'space_pct', 'time_pct'])
 
         # 合并趋势
-        merged_trend = pd.DataFrame(columns=['start_pos', 'end_pos', 'pct', 'last_weeks', 'open', 'close'])
+        merged_trend = pd.DataFrame(columns=['start_pos', 'end_pos', 'pct', 'last_periods', 'open', 'close'])
         up_trend = trend_data[trend_data['pct'] > 0]
         down_trend = trend_data[trend_data['pct'] < 0]
 
@@ -183,26 +182,31 @@ class Share:
                     data = data[data['date'] > trend['end_pos'][last]][data['date'] <= trend['start_pos'][index]][
                         'close']
                     peak_valley = max_min(data)
-                    secondary_trend.loc[secondary_index] = [trend.end_pos[last], trend.start_pos[index],
+                    secondary_trend.loc[secondary_index] = [trend['end_pos'][last], trend['start_pos'][index],
                                                             # 改为最大回撤幅度
                                                             (- trend['close'][last] + peak_valley) /
-                                                            trend['close'][last],
+                                                            trend['close'][last] * 100,
                                                             trend['start_w_index'][index] - trend['end_w_index'][last],
                                                             trend['close'][last], trend['open'][index],
                                                             # 改为最大回撤幅度
                                                             (trend['close'][last] - peak_valley)
-                                                            / (trend['close'][last] - trend['open'][last]),
+                                                            / (trend['close'][last] - trend['open'][last]) * 100,
 
                                                             (trend['start_w_index'][index] - trend['end_w_index'][
-                                                                last]) / trend['last_weeks'][last],
+                                                                last]) / trend['last_periods'][last],
                                                             ]
                     last = index
                     secondary_index += 1
 
                 else:
-                    merged_trend.loc[merged_index] = [trend.start_pos[first], trend.end_pos[last],
-                                                      (trend['close'][last] - trend['open'][first]) / trend['open'][
-                                                          first],
+                    if trend['start_w_index'][first] == self.ori_data_d.index[0]:
+                        start_price = self.ori_data_w['close'][self.ori_data_d.index[0]]
+                    else:
+                        start_price = self.ori_data_w['close'][trend['start_w_index'][first] - 1]
+                    end_price = self.ori_data_w['close'][trend['end_w_index'][first]]
+
+                    merged_trend.loc[merged_index] = [trend['start_pos'][first], trend['end_pos'][last],
+                                                      100 * (end_price / start_price - 1),
                                                       trend['end_w_index'][last] - trend['start_w_index'][
                                                           first] + 1,
                                                       trend['open'][first], trend['close'][last],
@@ -212,8 +216,10 @@ class Share:
                     last = index
 
             # 加最后一个趋势，上面的循环不会处理当前的融合趋势
-            merged_trend.loc[merged_index] = [trend.start_pos[first], trend.end_pos[last],
-                                              (trend['close'][last] - trend['open'][first]) / trend['open'][first],
+            start_price = self.ori_data_w['close'][trend['start_w_index'][first] - 1]
+            end_price = self.ori_data_w['close'][trend['end_w_index'][first]]
+            merged_trend.loc[merged_index] = [trend['start_pos'][first], trend['end_pos'][last],
+                                              100 * (end_price / start_price - 1),
                                               trend['end_w_index'][last] - trend['start_w_index'][first] + 1,
                                               trend['open'][first], trend['close'][last],
                                               ]
@@ -221,8 +227,8 @@ class Share:
 
         # 百分比处理
         for column in ['pct', 'space_pct', 'time_pct']:
-            secondary_trend[column] = secondary_trend[column].map(two_digit_percent)
-        merged_trend['pct'] = merged_trend['pct'].map(two_digit_percent)
+            secondary_trend[column] = secondary_trend[column].round(decimals=2)
+        merged_trend['pct'] = merged_trend['pct'].round(decimals=2)
         secondary_trend = secondary_trend.sort_values("start_pos")
         self.secondary_trend = secondary_trend
 
@@ -252,19 +258,19 @@ class Share:
 
         # 综合统计
         result += '平均幅度: {:.2f} %\n'.format(trend_data['pct'].mean())
-        result += '平均维持时长: {:.2f}周\n\n'.format(trend_data['last_weeks'].mean())
+        result += '平均维持时长: {:.2f}周\n\n'.format(trend_data['last_periods'].mean())
 
         print('根据均线趋势情况选择置信区间')
         # quantile分位数函数
         result += '幅度90%置信区间: {:.2f}~{:.2f}\n'.format(trend_data['pct'].quantile(0.05),
-                                                trend_data['pct'].quantile(0.95))
+                                                      trend_data['pct'].quantile(0.95))
         result += '幅度70%置信区间: {:.2f}~{:.2f}\n'.format(trend_data['pct'].quantile(0.15),
-                                                trend_data['pct'].quantile(0.85))
+                                                      trend_data['pct'].quantile(0.85))
 
-        result += '持续时间90%置信区间: {:.2f}~{:.2f}\n'.format(trend_data['last_weeks'].quantile(0.05),
-                                                  trend_data['last_weeks'].quantile(0.95))
-        result += '持续时间70%置信区间: {:.2f}~{:.2f}\n'.format(trend_data['last_weeks'].quantile(0.15),
-                                                  trend_data['last_weeks'].quantile(0.85))
+        result += '持续时间90%置信区间: {:.2f}~{:.2f}\n'.format(trend_data['last_periods'].quantile(0.05),
+                                                        trend_data['last_periods'].quantile(0.95))
+        result += '持续时间70%置信区间: {:.2f}~{:.2f}\n'.format(trend_data['last_periods'].quantile(0.15),
+                                                        trend_data['last_periods'].quantile(0.85))
 
         print('-------------------------------------------------------------------------------')
         print(result)
@@ -274,8 +280,8 @@ class Share:
         if not pct:
             print("以最后一波趋势统计")
             print(self.trend_data.iloc[-1])
-            pct = self.trend_data['pct'].iloc[-1].round(2)
-            time = self.trend_data['last_weeks'].iloc[-1].round(2)
+            pct = self.trend_data['pct'].iloc[-1]
+            time = self.trend_data['last_periods'].iloc[-1]
 
         if pct > 0:
             print('上涨趋势统计')
@@ -287,27 +293,27 @@ class Share:
         result_trend_data = []
 
         # 返回对应数据
-        required_columns = ['start_pos', 'end_pos', 'pct', 'last_weeks']
+        required_columns = ['start_pos', 'end_pos', 'pct', 'last_periods']
         result_trend_data.append(trend_data[abs(trend_data['pct']) > abs(pct)][required_columns])
         result_trend_data.append(
-            trend_data[trend_data['last_weeks'] > time][required_columns])
+            trend_data[trend_data['last_periods'] > time][required_columns])
         result_trend_data.append(
-            trend_data[trend_data['last_weeks'] <= time][abs(trend_data['pct']) >= abs(pct)][required_columns])
+            trend_data[trend_data['last_periods'] <= time][abs(trend_data['pct']) >= abs(pct)][required_columns])
 
         result_str = '非融合趋势中:\n'
 
         # 根据统计，幅度增加的可能性
-        potability = two_digit_percent(len(result_trend_data[0]) / len(trend_data))
+        potability = len(result_trend_data[0]) / len(trend_data)
         result_str += '幅度 > {:.2f}% 的概率 {:.2f}%\n'.format(pct, potability)
         result_str += str(result_trend_data[0]) + '\n'
 
         # 根据统计，时长增加的可能性
-        potability = two_digit_percent(len(result_trend_data[1]) / len(trend_data))
+        potability = len(result_trend_data[1]) / len(trend_data)
         result_str += '持续时长 > {:.2f}周的概率 {:.2f}%\n'.format(time, potability)
         result_str += str(result_trend_data[1]) + '\n'
 
         # 上涨猛烈程度评判,只能用来短期是否有反抽之类，没有太大用
-        potability = two_digit_percent(len(result_trend_data[2]) / len(trend_data))
+        potability = len(result_trend_data[2]) / len(trend_data)
         result_str += '{:.2f}周内上涨幅度 >= {:.2f}%的概率: {:.2f} %\n'.format(time, pct, potability)
         result_str += str(result_trend_data[2]) + '\n'
 
@@ -326,11 +332,11 @@ class Share:
 
         # 改为使用聚合函数
         group_names = ["{}-{}".format(left, right) for left, right in zip(range(-10, 10), range(-9, 11))]
-        cuts = pd.cut(data['pct_chg'], range(-10, 11), labels=group_names)
+        cuts = pd.cut(data['pct'], range(-10, 11), labels=group_names)
         self.volatility_data = pd.value_counts(cuts)
 
         # 绘制频率统计图
-        t = data['pct_chg'].plot.hist(bins=60)
+        t = data['pct'].plot.hist(bins=60)
         t.set_xlim((-11, 11))
 
     def in_trend(self, index):
@@ -352,11 +358,11 @@ class Share:
         self.merged_trend['end_d_index'] = self.merged_trend['end_pos'].map(
             lambda x: self.ori_data_d[self.ori_data_d['date'] >= x].index[0])
 
-        lines = self.ori_data_d[(self.ori_data_d['pct_chg'].abs() >= altitude_l) &
-                                (self.ori_data_d['pct_chg'].abs() < altitude_u)]
+        lines = self.ori_data_d[(self.ori_data_d['pct'].abs() >= altitude_l) &
+                                (self.ori_data_d['pct'].abs() < altitude_u)]
         # 根据索引计算在趋势中的位置
         lines['trend_w_index'] = lines.index.map(self.in_trend)
-        lines = pd.merge(lines[['date', 'close', 'pct_chg', 'trend_w_index']],
+        lines = pd.merge(lines[['date', 'close', 'pct', 'trend_w_index']],
                          self.merged_trend[['start_pos', 'end_pos', 'pct', 'start_d_index', 'end_d_index']],
                          right_index=True, left_on='trend_w_index', how='left')
 
@@ -364,8 +370,9 @@ class Share:
         # self.temp_data = lines
         # k线在趋势中的位置
         lines['in_trend_pos'] = lines.index.map(
-            lambda x: two_digit_percent(
-                (x - lines['start_d_index'][x]) / (lines['end_d_index'][x] - lines['start_d_index'][x])))
+            lambda x:
+            (x - lines['start_d_index'][x]) / (lines['end_d_index'][x] - lines['start_d_index'][x]))
+        lines['in_trend_pos'] = lines['in_trend_pos'].round(decimals=2)
         lines.fillna(0, inplace=True)
 
         trend_func = {"上行趋势": lambda pct: pct > 0, "下行趋势": lambda pct: pct < 0}
@@ -386,7 +393,7 @@ class Share:
                 trend = ["上行趋势", "下行趋势"][i]
                 k_type = ["大涨", "大跌"][j]
                 t = lines[trend_func[trend](lines['pct'])][
-                    k_func[k_type](lines['pct_chg'])]
+                    k_func[k_type](lines['pct'])]
                 # print(t)
                 t['in_trend_pos'].plot(ax=ax[i, j], kind='hist', bins=10)
                 ax[i, j].set_title("{}，{}".format(trend, k_type))

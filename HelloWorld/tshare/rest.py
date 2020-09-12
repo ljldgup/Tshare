@@ -2,12 +2,12 @@ from . import models as tmd
 from datetime import datetime
 from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
 
-from tools import share_statistic
-from tools import trade_analysis
+from tools import share_trend_statistic
+from tools import trade_statistic
 from tools import commom_tools
 
 # 每次启动时把db里数据清一下，因为日期可能不是最新的
-trade_analysis.store_trade()
+trade_statistic.store_trade()
 
 
 def delete_note(request):
@@ -64,8 +64,8 @@ def note_json(request):
 # 注意这里是不复权的k线数据，为了匹配买卖情况
 def k_data_json(request, r_code):
     # 先检测后存储
-    k_data = commom_tools.get_k_data(r_code, 'bfq')
-    k_data = k_data[0][['date', 'open', 'close', 'low', 'high', 'volume']].values.tolist()
+    k_data = commom_tools.get_k_data(r_code, 'd', 'bfq')
+    k_data = k_data[['date', 'open', 'close', 'low', 'high', 'volume']].values.tolist()
 
     return JsonResponse(k_data, safe=False)
 
@@ -111,23 +111,23 @@ def trade_data_json(request):
 
 # 前复权数据，趋势数据
 def trend_data_json(request, r_code):
-    share = share_statistic.Share(r_code)
+    share = share_trend_statistic.Share(r_code)
 
     if r_code == 'sh' or r_code == 'sz' or r_code == 'cyb':
         # 深沪，创业板
-        share.set_judge_condition(1, 2, 6, -1, 2, -6)
+        share.set_judge_condition(0.1, 4, 6, 0.1, 4, -6)
     else:
-        share.set_judge_condition(3, 3, 15, -3, 3, -15)
+        share.set_judge_condition(0.1, 4, 18, 0.1, 4, -18)
     share.statistic()
 
     data_list = {}
     data_list['qfq_data'] = share.ori_data_w[
         ['date', 'open', 'close', 'high', 'low', 'volume']].values.tolist()
     data_list['trend_data'] = share.trend_data[
-        ['start_pos', 'end_pos', 'open', 'close', 'pct', 'last_weeks']].values.tolist()
+        ['start_pos', 'end_pos', 'open', 'close', 'pct', 'last_periods']].values.tolist()
     data_list['secondary_trend_data'] = share.secondary_trend[
-        ['start_pos', 'end_pos', 'open', 'close', 'pct', 'last_weeks', 'space_pct', 'time_pct']].values.tolist()
+        ['start_pos', 'end_pos', 'open', 'close', 'pct', 'last_periods', 'space_pct', 'time_pct']].values.tolist()
     data_list['merged_trend_data'] = share.merged_trend[
-        ['start_pos', 'end_pos', 'open', 'close', 'pct', 'last_weeks']].values.tolist()
+        ['start_pos', 'end_pos', 'open', 'close', 'pct', 'last_periods']].values.tolist()
 
     return JsonResponse(data_list, safe=False)

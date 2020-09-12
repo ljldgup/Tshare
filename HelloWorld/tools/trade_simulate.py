@@ -1,5 +1,7 @@
+"""
+计算各类指标，统计其交易成功概率
+"""
 import os
-
 import pandas as pd
 
 # 由于tushare的前复权数据有严重计算错误问题，这里考虑直接手动从东方财富后台拉数据
@@ -34,7 +36,7 @@ def data_process(code):
 
         for c in ['open', 'close', 'high', 'low', 'number', 'volume']:
             ans[c] = ans[c].map(float)
-        ans['pct_chg'] = ans['close'].pct_change().fillna(0) * 100
+        ans['pct'] = ans['close'].pct_change().fillna(0) * 100
 
         ans.to_csv(path + '.csv')
         return ans
@@ -59,13 +61,7 @@ def data_retreatment(data):
     data['macd'] = (data['dif'] - data['dea']) * 2
 
     # obv统计成交量变动的趋势来推测股价趋势, 逐日累计每日上市股票总成交量，若上涨，加，下跌，减
-    data['obv'] = (data['pct_chg'].map(lambda x: 1 if x > 0 else -1) * data['volume']).cumsum()
-
-    # wr （Hn—C）÷（Hn—Ln）×100 其中：C为计算日的收盘价，Ln为N周期内的最低价，Hn为N周期内的最高价，
-    data['wr'] = (data['high'].rolling(10).max() - data['close']) / (
-            data['high'].rolling(10).max() - data['high'].rolling(10).min())
-    data['wr'] = (data['high'].rolling(20).max() - data['close']) / (
-            data['high'].rolling(20).max() - data['high'].rolling(20).min())
+    data['obv'] = (data['pct'].map(lambda x: 1 if x > 0 else -1) * data['volume']).cumsum()
 
     #  RSV指标主要用来分析市场是处于“超买”还是“超卖”：RSV高于80%时候市场即为超买；RSV低于20%时候，市场为超卖
     #  rsv =(收盘价 – n日内最低价)/(n日内最高价 – n日内最低价)×100
@@ -76,7 +72,7 @@ def data_retreatment(data):
     #  α=1/(1+com)
     data['k'] = data['rsv_24'].ewm(com=2, adjust=False).mean()
     # 当日D值 = 2 / 3×前一日D值 + 1 / 3×当日K值
-    data['d'] = data['k'].ewm(com=2).mean()
+    data['d'] = data['k'].ewm(com=2, adjust=False).mean()
     # J值 = 3 * 当日K值 - 2 * 当日D值
     data['j'] = 3 * data['k'] - 2 * data['d']
 
@@ -112,7 +108,7 @@ def down_trade_in(data):
     t = data
     # 这里不知道为什么日期筛选，放在外面会出错
     t = t[t['date'] > '2010-01-01']
-    t = t[data['pct_chg'] < -4]
+    t = t[data['pct'] < -4]
     return t.index
 
 
@@ -123,7 +119,7 @@ def up_trade_in(data):
     t = t[t['ma_60_slope'] >= 0]
     t = t[t['close'] >= t['ma_60']]
     t = t[t['ma_200_slope'] >= 0]
-    t = t[abs(t['pct_chg']) > 4]
+    t = t[abs(t['pct']) > 4]
     return t.index
 
 
@@ -165,7 +161,7 @@ def trade_target(data, loss_pct, earning_pct):
     end_date = []
     for in_index in data.index:
         # 一字涨停无法买入
-        if data['pct_chg'].loc[in_index] > 9.9 and data['open'].loc[in_index] == data['close'].loc[in_index]:
+        if data['pct'].loc[in_index] > 9.9 and data['open'].loc[in_index] == data['close'].loc[in_index]:
             trade_target.append(-1)
             end_date.append(data['date'].loc[in_index])
             continue
@@ -190,7 +186,7 @@ def trade_target(data, loss_pct, earning_pct):
         elif not earning_index.empty and loss_index.empty:
             trade_target.append(1)
             end_date.append(data['date'].loc[earning_index[0]])
-        #止损止盈均可选择时间近的
+        # 止损止盈均可选择时间近的
         else:
             if earning_index[0] < loss_index[0]:
                 trade_target.append(1)
@@ -229,17 +225,19 @@ def virtual_trade_statics(data, in_function, out_function):
 
 # 主要用于和软件数据比较是否一致
 def print_test(data):
-    data[['date', 'ma_20', 'ma_60', 'ma_200']].tail()
+    data[['date', 'ma_20', 'ma_60', 'ma_200']][300:320]
     data[['date', 'ma_20', 'bolling_upper', 'bolling_lower']][-240:-220]
-    data[['date', 'dif', 'dea', 'macd']][-200:-180]
+    data[['date', 'dif', 'dea', 'macd']][-400:-380]
+    # rsi的值有问题
     data[['date', 'rsi_12', 'rsi_24', 'rsi_48']][-300:-280]
-    data[['date', 'k', 'd', 'j']][-300:-280]
-    data[['date', 'bias_20', 'bias_60', 'bias_200']][-300:-280]
-    data[['date', 'open', 'close', 'pct_chg', 'trade_target', 'trade_target_end_date']][-40:]
+    data[['date', 'k', 'd', 'j']][-500:-480]
+    data[['date', 'bias_10', 'bias_20', 'bias_60']][-300:-280]
+    data[['date', 'open', 'close', 'pct', 'trade_target', 'trade_target_end_date']][-40:]
+
 
 if __name__ == '__main__':
     # 前复权，不然技术指标没有意义
-    data = get_k_data('300725', 'qfq')
-    k_day_data = data_retreatment(data[0])
+    data = get_k_data('300725', 'd', 'qfq')
+    k_day_data = data_retreatment(data)
     # t = virtual_trade_statics(data, up_trade_in, trade_out)
     k_day_data = trade_target(k_day_data, 10, 30)
