@@ -379,10 +379,11 @@ class Share:
         k_func = {"大涨": lambda x: x > 0, "大跌": lambda x: x < 0}
 
         print("幅度{}~{}的k线, 占趋势比例".format(altitude_l, altitude_u))
+        # 融合后pct_x k线涨幅，pct_y为趋势涨幅
         for trend in trend_func:
             merged_trend = self.merged_trend[trend_func[trend](self.merged_trend['pct'])]
             print('{0}占比约{1:.2f}%'.format(trend,
-                                          100 * len(lines[trend_func[trend](lines['pct'])]) / (
+                                          100 * len(lines[trend_func[trend](lines['pct_x'])]) / (
                                                   merged_trend['end_d_index'].sum() - merged_trend[
                                               'start_d_index'].sum())))
 
@@ -392,8 +393,8 @@ class Share:
             for j in range(2):
                 trend = ["上行趋势", "下行趋势"][i]
                 k_type = ["大涨", "大跌"][j]
-                t = lines[trend_func[trend](lines['pct'])][
-                    k_func[k_type](lines['pct'])]
+                t = lines[trend_func[trend](lines['pct_y'])][
+                    k_func[k_type](lines['pct_x'])]
                 # print(t)
                 t['in_trend_pos'].plot(ax=ax[i, j], kind='hist', bins=10)
                 ax[i, j].set_title("{}，{}".format(trend, k_type))
