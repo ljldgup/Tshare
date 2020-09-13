@@ -12,6 +12,12 @@ from tools.commom_tools import get_k_data
 # 自定义买入条件
 from tools.share_analysis import technical_indicators_gen
 
+def down_trade_in(data):
+    t = data
+    # 这里不知道为什么日期筛选，放在外面会出错
+    t = t[t['date'] > '2010-01-01']
+    t = t[data['pct'] < -4]
+    return t.index
 
 def up_trade_in(data):
     t = data

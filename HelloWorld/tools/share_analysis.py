@@ -1,53 +1,20 @@
-# tools 报错把 外层Helloworld 文件夹 右键 make directory as -> source root
-from tools.commom_tools import get_k_data
+import numpy as np
+import pandas as pd
+import matplotlib.dates as mdates
+from datetime import datetime
+
 from sklearn.datasets import make_classification
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.linear_model import SGDClassifier, LogisticRegression
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.preprocessing import StandardScaler, scale, MinMaxScaler
-
-
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.svm import LinearSVC, SVC
-
 from sklearn.cluster import KMeans
-import numpy as np
-import pandas as pd
-import matplotlib.dates as mdates
-from datetime import datetime
 
-
-def data_process(code):
-    path = 'data/{}'.format(code)
-    if os.path.exists(path + '.csv'):
-        return pd.read_csv(path + '.csv')
-    elif os.path.exists(path):
-        with open(path) as f:
-            # 读进来的是个列表字符
-            raw_data = eval(f.read())
-
-        columns = ['date', 'open', 'close', 'high', 'low', 'number', 'volume', 'turnover_rate']
-        pd_data = {c: [] for c in columns}
-
-        for line in raw_data:
-            t_data = line.split(',')
-            for i in range(len(columns)):
-                pd_data[columns[i]].append(t_data[i])
-
-        ans = pd.DataFrame(pd_data)
-        # 把换手率从字符转为数字
-        ans['turnover_rate'] = ans['turnover_rate'].replace('-', '0%')
-        ans['turnover_rate'] = ans['turnover_rate'].map(lambda p: float(p.replace('%', '')))
-
-        for c in ['open', 'close', 'high', 'low', 'number', 'volume']:
-            ans[c] = ans[c].map(float)
-        ans['pct'] = ans['close'].pct_change().fillna(0) * 100
-
-        ans.to_csv(path + '.csv')
-        return ans
-    else:
-        raise Exception("文件没下载")
+# tools 报错把 外层Helloworld 文件夹 右键 make directory as -> source root
+from tools.commom_tools import get_k_data
 
 
 # 生成技术指标
@@ -68,7 +35,7 @@ def technical_indicators_gen(data):
     data['macd'] = (data['dif'] - data['dea']) * 2
 
     # obv统计成交量变动的趋势来推测股价趋势, 逐日累计每日上市股票总成交量，若上涨，加，下跌，减
-    data['obv'] = (data['pct'].map(lambda x: 1 if x > 0 else -1) * data['volume']).cumsum()
+    data['obv'] = (data['pct'].map(lambda x: 1 if x > 0 else -1) * data['turnover']).cumsum()
 
     #  RSV指标主要用来分析市场是处于“超买”还是“超卖”：RSV高于80%时候市场即为超买；RSV低于20%时候，市场为超卖
     #  rsv =(收盘价 – n日内最低价)/(n日内最高价 – n日内最低价)×100
@@ -111,45 +78,9 @@ def technical_indicators_gen(data):
     return data
 
 
-# 生成供训练用的参数
-def train_feature_gen(data):
-    # 均线波动范围交广，均线收盘价之间的百分比差
-    data['ma_20_60_pct'] = (data['ma_20'] - data['ma_60']) / data['ma_60']
-    data['ma_60_200_pct'] = (data['ma_60'] - data['ma_200']) / data['ma_200']
-    data['ma_20_200_pct'] = (data['ma_20'] - data['ma_200']) / data['ma_200']
-
-    # 短期涨幅累计
-    data['pct_10'] = data['close'].pct_change(10)
-    data['pct_20'] = data['close'].pct_change(20)
-    data['pct_60'] = data['close'].pct_change(60)
-
-    # 布林线相对
-    data['close_bolling_upper'] = (data['close'] - data['bolling_upper']) / data['close']
-    data['close_bolling_lower'] = (data['close'] - data['bolling_lower']) / data['close']
-
-    # 成交量相对
-    t = data['turnover'].rolling(20).mean()
-    data['turnover_20_bias'] = (data['turnover'] - t) / t
-    t = data['obv'].rolling(20).mean()
-    data['obv_20_bias'] = (data['obv'] - t) / t
-
-
-def period_data_generate(data):
-    i = 1
-    train_x = []
-    train_y = []
-    t_data = data[['close', 'open', 'high', 'low', 'turnover_rate']]
-    while i + 21 < len(data):
-        t = t_data.loc[i:i + 20].values.reshape(1, -1)
-        train_x.append(data)
-        train_y.append(data['trade_target'].loc[i + 21])
-        i += 20
-    return np.concatenate(train_x), np.concatenate(train_y)
-
-
 # 以基础的止盈止损策略，判断能否盈利，不统计最终获利，但别的函数可以再次基础上再次计算，0失败，1成功，-1未知或无法买入，不计入
 # 注意这里是按章当天收盘价买入来算的，用软件算涨跌幅的时候要从第二天开始算，即8/8买入，应该从8/9开始算，8/8当天涨跌不算
-def trade_target(data, loss_pct, earning_pct):
+def trade_target_gen(data, loss_pct, earning_pct):
     trade_target = []
     end_date = []
     for in_index in data.index:
@@ -193,15 +124,41 @@ def trade_target(data, loss_pct, earning_pct):
     return data
 
 
-def down_trade_in(data):
-    t = data
-    # 这里不知道为什么日期筛选，放在外面会出错
-    t = t[t['date'] > '2010-01-01']
-    t = t[data['pct'] < -4]
-    return t.index
+# 生成供训练用的参数
+def train_feature_gen(data):
+    # 均线波动范围交广，均线收盘价之间的百分比差
+    data['ma_20_60_pct'] = (data['ma_20'] - data['ma_60']) / data['ma_60']
+    data['ma_60_200_pct'] = (data['ma_60'] - data['ma_200']) / data['ma_200']
+    data['ma_20_200_pct'] = (data['ma_20'] - data['ma_200']) / data['ma_200']
+
+    # 短期涨幅累计
+    data['pct_10'] = data['close'].pct_change(10)
+    data['pct_20'] = data['close'].pct_change(20)
+    data['pct_60'] = data['close'].pct_change(60)
+
+    # 布林线相对
+    data['close_bolling_upper'] = (data['close'] - data['bolling_upper']) / data['close']
+    data['close_bolling_lower'] = (data['close'] - data['bolling_lower']) / data['close']
+
+    # 成交量相对
+    t = data['turnover'].rolling(20).mean()
+    data['turnover_20_bias'] = (data['turnover'] - t) / t
+    t = data['obv'].rolling(20).mean()
+    data['obv_20_bias'] = (data['obv'] - t) / t
 
 
-
+# 将n天的走势作为输入，预估后面一天买入能否盈利
+def period_data_generate(data, n):
+    i = 1
+    train_x = []
+    train_y = []
+    t_data = data[['close', 'open', 'high', 'low', 'turnover']]
+    while i + n < len(t_data):
+        train_x.append(t_data.iloc[i:i + n].values.reshape(1, -1))
+        train_y.append(data['trade_target'].iloc[i + n])
+        # 这里是加n//5，可改
+        i += n // 5
+    return np.concatenate(train_x), np.array(train_y)
 
 
 # 主要用于和软件数据比较是否一致
@@ -216,6 +173,7 @@ def print_test(data):
     data[['date', 'open', 'close', 'pct', 'trade_target', 'trade_target_end_date']][-40:]
 
 
+# 股票之间的相关性
 def coefficient_correlation(compare_shares, st=None, ed=None, columns='pct_chg', names=None):
     if names is None:
         names = []
@@ -247,6 +205,7 @@ def coefficient_correlation(compare_shares, st=None, ed=None, columns='pct_chg',
     return t
 
 
+# 将几个股票的涨幅列在一起，可以用于比较同题材，同板块的股票
 def relative_growth(compare_shares, st=None, ed=None, columns='close', names=None):
     if names is None:
         names = []
@@ -267,7 +226,7 @@ def relative_growth(compare_shares, st=None, ed=None, columns='close', names=Non
 
     for i in range(len(compare_shares)):
         t['cum_{}_{}'.format(columns, i)] = t['close_' + str(i)] / t['close_' + str(i)][t.index[0]] - 1
-        t['cum_{}_{}'.format(columns, i)].map(two_digit_percent)
+        t['cum_{}_{}'.format(columns, i)] = t['cum_{}_{}'.format(columns, i)].round(decimals=2)
 
     cum = t[['cum_{}_{}'.format(columns, i) for i in range(len(compare_shares))] + ['date']]
     cum['date'] = cum['date'].apply(lambda date_str: datetime.strptime(date_str, '%Y-%m-%d').date())
@@ -278,22 +237,26 @@ def relative_growth(compare_shares, st=None, ed=None, columns='close', names=Non
     return t
 
 
-def share_period_genderate(data):
+# 用于聚类，生成日期和对应前n天的股价
+def share_period_genderate(data, n):
     i = 1
     ans = []
     date = []
-    t_data = data[['close', 'open', 'high', 'low']]
-    while i + 20 < len(data):
-        t = t_data.iloc[i:i + 20].values.reshape(1, -1)
-        t = t - t.min()
+    t_data = data[['close', 'open', 'high', 'low', 'volume']]
+    while i + n < len(data):
+        t = t_data.iloc[i:i + n].values.reshape(1, -1)
+        # t = t - t.min()
         ans.append(t)
-        date.append('{}~{}'.format(data_d['date'].iloc[i], data_d['date'].iloc[i + 20]))
-        i += 20
+        date.append('{}~{}'.format(data['date'].iloc[i], data['date'].iloc[i + 20]))
+        # 这里是加n//2，可改
+        i += n // 2
     return np.concatenate(ans), date
 
 
 def cluster_test(data):
-    x, date = share_period_genderate(data)
+    x, date = share_period_genderate(data, 40)
+    scaler = MinMaxScaler()
+    x = scaler.fit_transform(x)
     kmeans = KMeans(n_clusters=12)
     y_pred = kmeans.fit_predict(x)
 
@@ -322,55 +285,36 @@ def cluster_test(data):
     return rst
 
 
-if __name__ == '__main__':
-    '''
-    codes = ['601186', '600510', 'sh', 'cyb']
-    data_d, data_w, data_m = get_k_data('sh')
-    cluster_test(data_d)
-    coefficient_correlation(data_d, st='2019-01-10', names=codes)
-    relative_growth(data_d, st='2019-01-10', names=codes)
-    '''
-    data = get_k_data('000725', 'd', 'qfq')
+def trade_success_classifiers_test(code):
+    data = get_k_data(code, 'd', 'qfq')
     data = technical_indicators_gen(data)
     train_feature_gen(data)
     # t = virtual_trade_statics(data, up_trade_in, trade_out)
-    trade_target(data, 10, 30)
+    trade_target_gen(data, 10, 30)
+    # 去掉NAN和无法分类的
     data = data.dropna()
-    data = data[data['trade_target'] != -1]
-    feature_list = ['pct_10', 'pct_20', 'pct_60']
 
-    X = data[feature_list].values
-    y = data['trade_target'].values
+    # 通过技术指标选取，除了knn，随机森林，其他预测都为0，原因不明
+    # feature_list = ['pct_10', 'pct_20', 'pct_60']
+    # X = data[feature_list].values
+    # y = data['trade_target'].values
+
+    # 直接输入股价，成交量, 这种比输入技术指标要好
+    X, y = period_data_generate(data, 20)
+    X, y = X[y != -1], y[y != -1]
 
     # 标准化
     # scaler = StandardScaler()
     # x_scaled = scaler.fit_transform(X)
-
     # 归一化
     scaler = MinMaxScaler()
     x_scaled = scaler.fit_transform(X)
 
-    '''
-    X, y = make_classification(
-        n_samples=1000, n_features=15, n_classes=2,
-        n_redundant=4, n_informative=10,
-        random_state=22, n_clusters_per_class=1,
-        scale=100)
-    '''
+    # 这里是随机分的，所以可能每次结果不一样
     train_x, test_x, train_y, test_y = train_test_split(x_scaled, y, train_size=0.7)
-    # RandomForestClassifier 和 KNeighborsClassifier有正常结果，其他预测值都是0
-    # classifier = LinearSVC(C=1, loss="hinge")
-    # classifier = SVC(kernel="rbf", C=0.01)
-    # classifier = KNeighborsClassifier(n_neighbors=5)
-    # classifier = SGDClassifier(random_state=42)
-    # classifier = RandomForestClassifier(random_state=42)
-    classifier = GradientBoostingClassifier()
-    # classifier = LogisticRegression()
-    '''
-    '''
     classifiers = [LinearSVC(C=1), SVC(kernel="rbf", C=0.01), KNeighborsClassifier(n_neighbors=5),
-                       SGDClassifier(random_state=42), RandomForestClassifier(random_state=42),
-                       GradientBoostingClassifier(), LogisticRegression()]
+                   SGDClassifier(random_state=42), RandomForestClassifier(random_state=42),
+                   GradientBoostingClassifier(), LogisticRegression()]
     for classifier in classifiers:
         classifier.fit(train_x, train_y)
         pred_y = classifier.predict(test_x)
@@ -380,3 +324,19 @@ if __name__ == '__main__':
         print('precision_score', precision_score(pred_y, test_y))
         print('recall_score', recall_score(pred_y, test_y))
         print('f1_score', f1_score(pred_y, test_y))
+
+
+if __name__ == '__main__':
+    '''
+    # 对同一只股票不同时间段进行聚类
+    data_d = get_k_data('sh', 'd', 'qfq')
+    ans = cluster_test(data_d)
+    '''
+
+    '''
+    # 相关性测试
+    codes = ['601186', '600510', 'sh', 'cyb']
+    coefficient_correlation(data_d, st='2019-01-10', names=codes)
+    relative_growth(data_d, st='2019-01-10', names=codes)
+    '''
+    # trade_success_classifiers_test('000725')

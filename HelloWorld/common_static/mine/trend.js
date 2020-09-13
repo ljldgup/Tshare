@@ -8,6 +8,9 @@ $.ajaxSetup({async:false});
 $.getJSON("/trend_data_json/" + r_code , function(data){
     rData = data.qfq_data;
     trendData = data.merged_trend_data;
+    for(i=0;i<trendData.length;i++){
+        trendData[i][4] = trendData[i][4].toFixed(2)
+    }
 })
 
 //计算MA平均线，N日移动平均线=N日收盘价之和/N  dayCount要计算的天数(5,10,20,30)
