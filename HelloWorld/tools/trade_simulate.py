@@ -9,7 +9,16 @@ import pandas as pd
 # 点开响应，等待片刻，复制其中data的数据，保存为[..]格式，文件名为股票代码
 
 # tools 报错把 外层Helloworld 文件夹 右键 make directory as -> source root
+from sklearn.datasets import make_classification
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.linear_model import SGDClassifier, LogisticRegression
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.preprocessing import StandardScaler, scale, MinMaxScaler
+
 from tools.commom_tools import get_k_data
+from sklearn.svm import LinearSVC, SVC
 
 
 def data_process(code):
@@ -44,7 +53,8 @@ def data_process(code):
         raise Exception("文件没下载")
 
 
-def data_retreatment(data):
+# 生成技术指标
+def technical_indicators_gen(data):
     # 注意股价不能前移，否则就是未来函数
 
     # 当要比较数值与均价的关系时，用 MA 就可以了，而要比较均价的趋势快慢时，用 EMA 更稳定
@@ -95,7 +105,7 @@ def data_retreatment(data):
 
     # 乖离率
     # BIAS=(收盘价-收盘价的N日简单平均)/收盘价的N日简单平均*100
-    for n in [10, 20, 60]:
+    for n in [20, 60, 200]:
         ma = data['close'].rolling(n).mean()
         data['bias_{}'.format(n)] = (data['close'] - ma) / ma * 100
 
@@ -104,54 +114,35 @@ def data_retreatment(data):
     return data
 
 
+# 生成供训练用的参数
+def train_feature_gen(data):
+    # 均线波动范围交广，均线收盘价之间的百分比差
+    data['ma_20_60_pct'] = (data['ma_20'] - data['ma_60']) / data['ma_60']
+    data['ma_60_200_pct'] = (data['ma_60'] - data['ma_200']) / data['ma_200']
+    data['ma_20_200_pct'] = (data['ma_20'] - data['ma_200']) / data['ma_200']
+
+    # 短期涨幅累计
+    data['pct_10'] = data['close'].pct_change(10)
+    data['pct_20'] = data['close'].pct_change(20)
+    data['pct_60'] = data['close'].pct_change(60)
+
+    # 布林线相对
+    data['close_bolling_upper'] = (data['close'] - data['bolling_upper']) / data['close']
+    data['close_bolling_lower'] = (data['close'] - data['bolling_lower']) / data['close']
+
+    # 成交量相对
+    t = data['turnover'].rolling(20).mean()
+    data['turnover_20_bias'] = (data['turnover'] - t) / t
+    t = data['obv'].rolling(20).mean()
+    data['obv_20_bias'] = (data['obv'] - t) / t
+
+
 def down_trade_in(data):
     t = data
     # 这里不知道为什么日期筛选，放在外面会出错
     t = t[t['date'] > '2010-01-01']
     t = t[data['pct'] < -4]
     return t.index
-
-
-def up_trade_in(data):
-    t = data
-    # t = t[t['date'] > '2010-01-01']
-    # t = t[t['ma_10'] >= t['ma_60']][t['ma_10'].shift(1) < t['ma_60'].shift(1)]
-    t = t[t['ma_60_slope'] >= 0]
-    t = t[t['close'] >= t['ma_60']]
-    t = t[t['ma_200_slope'] >= 0]
-    t = t[abs(t['pct']) > 4]
-    return t.index
-
-
-def trade_out(data, in_index, stop_loss_pct):
-    stop_win_pct = 3 * stop_loss_pct
-    end_index = max(data.index)
-    cost = data['close'].iloc[in_index]
-    max_price = cost
-    today = in_index + 1
-    while today <= end_index:
-        # print(data['date'].iloc[today], ' ', data['close'].iloc[today], ' ', data['high'].iloc[today])
-        today_close = data['close'].iloc[today]
-        today_max = data['high'].iloc[today]
-
-        # 创新高
-        if today_max > max_price:
-            max_price = today_max
-
-        # 直接止盈
-        elif today_close <= cost * (1 - stop_loss_pct):
-            # 低于止损价
-            return today
-        # 过止盈回落，或者从最高点跌落一个止损点，这里有待改进
-        elif max_price >= cost * (1 + stop_win_pct):
-            if today_close < cost * (1 + stop_win_pct) or today_close < max_price * (1 - stop_loss_pct):
-                return today
-
-        # 有一定利润回落至0
-        elif max_price >= cost * (1 + stop_loss_pct) and today_close <= cost:
-            return today
-        today += 1
-        # print(max_price, ' ', cost)
 
 
 # 以基础的止盈止损策略，判断能否盈利，不统计最终获利，但别的函数可以再次基础上再次计算，0失败，1成功，-1未知或无法买入，不计入
@@ -201,6 +192,50 @@ def trade_target(data, loss_pct, earning_pct):
     return data
 
 
+# 自定义买入条件
+def up_trade_in(data):
+    t = data
+    # t = t[t['date'] > '2010-01-01']
+    # t = t[t['ma_10'] >= t['ma_60']][t['ma_10'].shift(1) < t['ma_60'].shift(1)]
+    t = t[t['ma_60_slope'] >= 0]
+    t = t[t['close'] >= t['ma_60']]
+    t = t[t['ma_200_slope'] >= 0]
+    t = t[abs(t['pct']) > 4]
+    return t.index
+
+
+# 模拟持股
+def trade_out(data, in_index, stop_loss_pct):
+    stop_win_pct = 3 * stop_loss_pct
+    end_index = max(data.index)
+    cost = data['close'].iloc[in_index]
+    max_price = cost
+    today = in_index + 1
+    while today <= end_index:
+        # print(data['date'].iloc[today], ' ', data['close'].iloc[today], ' ', data['high'].iloc[today])
+        today_close = data['close'].iloc[today]
+        today_max = data['high'].iloc[today]
+
+        # 创新高
+        if today_max > max_price:
+            max_price = today_max
+
+        # 直接止盈
+        elif today_close <= cost * (1 - stop_loss_pct):
+            # 低于止损价
+            return today
+        # 过止盈回落，或者从最高点跌落一个止损点，这里有待改进
+        elif max_price >= cost * (1 + stop_win_pct):
+            if today_close < cost * (1 + stop_win_pct) or today_close < max_price * (1 - stop_loss_pct):
+                return today
+
+        # 有一定利润回落至0
+        elif max_price >= cost * (1 + stop_loss_pct) and today_close <= cost:
+            return today
+        today += 1
+        # print(max_price, ' ', cost)
+
+
 def virtual_trade_statics(data, in_function, out_function):
     index = in_function(data)
     origin_index = []
@@ -237,7 +272,52 @@ def print_test(data):
 
 if __name__ == '__main__':
     # 前复权，不然技术指标没有意义
-    data = get_k_data('300725', 'd', 'qfq')
-    k_day_data = data_retreatment(data)
+    data = get_k_data('000725', 'd', 'qfq')
+    data = technical_indicators_gen(data)
+    train_feature_gen(data)
     # t = virtual_trade_statics(data, up_trade_in, trade_out)
-    k_day_data = trade_target(k_day_data, 10, 30)
+    trade_target(data, 10, 30)
+    data = data.dropna()
+    data = data[data['trade_target'] != -1]
+    feature_list = ['pct_10', 'pct_20', 'pct_60']
+
+    X = data[feature_list].values
+    y = data['trade_target'].values
+
+    # 标准化
+    # scaler = StandardScaler()
+    # x_scaled = scaler.fit_transform(X)
+
+    # 归一化
+    scaler = MinMaxScaler()
+    x_scaled = scaler.fit_transform(X)
+
+    '''
+    X, y = make_classification(
+        n_samples=1000, n_features=15, n_classes=2,
+        n_redundant=4, n_informative=10,
+        random_state=22, n_clusters_per_class=1,
+        scale=100)
+    '''
+    train_x, test_x, train_y, test_y = train_test_split(x_scaled, y, train_size=0.7)
+    # RandomForestClassifier 和 KNeighborsClassifier有正常结果，其他预测值都是0
+    # classifier = LinearSVC(C=1, loss="hinge")
+    # classifier = SVC(kernel="rbf", C=0.01)
+    # classifier = KNeighborsClassifier(n_neighbors=5)
+    # classifier = SGDClassifier(random_state=42)
+    # classifier = RandomForestClassifier(random_state=42)
+    classifier = GradientBoostingClassifier()
+    # classifier = LogisticRegression()
+    '''
+    '''
+    for classifier in [LinearSVC(C=1), SVC(kernel="rbf", C=0.01), KNeighborsClassifier(n_neighbors=5),
+                       SGDClassifier(random_state=42), RandomForestClassifier(random_state=42),
+                       GradientBoostingClassifier(), LogisticRegression()]:
+        classifier.fit(train_x, train_y)
+        pred_y = classifier.predict(test_x)
+        print('-------------------------------------')
+        print(classifier)
+        print('accuracy_score', accuracy_score(pred_y, test_y))
+        print('precision_score', precision_score(pred_y, test_y))
+        print('recall_score', recall_score(pred_y, test_y))
+        print('f1_score', f1_score(pred_y, test_y))
