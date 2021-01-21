@@ -4,15 +4,10 @@
 """
 import json
 import os
-import sys
 from datetime import datetime
-from time import sleep
 
-import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
-import matplotlib.dates as mdates
-import tushare as ts
+
 import urllib.request
 
 '''
@@ -45,25 +40,6 @@ def get_k_data(code, t_type, k_type):
     return get_and_cache_with_dfcf(code, t_type, k_type)
 
 
-# tushare获取主要用于不复权数据
-def get_and_cache_with_tushare(code, t_type, k_type):
-    cache_folder = 'cached_data'
-    if not os.path.exists(cache_folder):
-        os.mkdir(cache_folder)
-    today = datetime.now().strftime(("%Y-%m-%d"))
-    if os.path.exists('{}/{}_{}_{}'.format(cache_folder, code, t_type, k_type)):
-        print("read from csv")
-        ori_data = pd.read_csv('{}/{}_{}_{}'.format(cache_folder, code, t_type, k_type))
-
-    else:
-        ori_data = ts.get_k_data(code, ktype=t_type, autype=k_type, index=False,
-                                   start='2001-01-01', end=today)
-        if len(ori_data) > 10:
-            ori_data.to_csv('{}/{}_{}_{}'.format(cache_folder, code, t_type, k_type))
-        ori_data.pct_change().fillna(0).map(two_digit_percent)
-
-    return ori_data
-
 
 # 两位小数百分比
 def two_digit_percent(number):
@@ -72,13 +48,14 @@ def two_digit_percent(number):
 
 # 东方财富主要用于复权数据，tushare复权数据有问题
 def get_and_cache_with_dfcf(code: str, t_type: str, k_type: str):
-    cache_folder = 'cached_data'
+    cache_folder = 'cached_data/' + datetime.now().strftime("%Y-%m-%d")
     if not os.path.exists(cache_folder):
         os.mkdir(cache_folder)
     if os.path.exists('{}/{}_{}_{}'.format(cache_folder, code, t_type, k_type)):
         print("read from csv")
         data = pd.read_csv('{}/{}_{}_{}'.format(cache_folder, code, t_type, k_type))
 
+    #接口参数到东方财富的适配
     else:
         if code == 'sh':
             sect_id = 1

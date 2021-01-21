@@ -216,6 +216,7 @@ if __name__ == '__main__':
     df['id'] = df.index
     df.to_sql("original_trade_data", con=yconnect, if_exists='replace')
 
+    # 保存一只股票主要是创建一下表结构
     for code in df['code'].drop_duplicates():
         dbtest.store_k_data(code, yconnect)
         break

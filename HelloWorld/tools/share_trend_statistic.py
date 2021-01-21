@@ -3,13 +3,8 @@
 用于统计股票中长期趋势，k线分布
 """
 import datetime
-import os
-from time import sleep
-
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
-import tushare as ts
 
 # tools 报错把 外层Helloworld 文件夹 右键 make directory as -> source root
 from tools.commom_tools import two_digit_percent, get_k_data
