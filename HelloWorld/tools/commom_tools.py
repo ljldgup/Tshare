@@ -5,6 +5,7 @@
 import json
 import os
 from datetime import datetime
+import time
 
 import pandas as pd
 
@@ -66,7 +67,7 @@ def get_and_cache_with_dfcf(code: str, t_type: str, k_type: str):
         elif code == 'cyb':
             sect_id = 0
             code = '399006'
-        elif code.startswith('600'):
+        elif code.startswith('6'):
             sect_id = 1
         else:
             sect_id = 0
@@ -76,16 +77,62 @@ def get_and_cache_with_dfcf(code: str, t_type: str, k_type: str):
         url = EAST_MONEY_URL.format(sect_id, code, klt, fqt)
         with urllib.request.urlopen(url) as req:
             # 返回的是多重嵌套字典
+            print(url)
             json_data = json.load(req)
         k_lines_data = [data.split(',') for data in json_data['data']['klines']]
         data = pd.DataFrame(k_lines_data, columns=EAST_MONEY_COLUMNS)
+        data['code'] = code
         data[EAST_MONEY_COLUMNS[1:]] = data[EAST_MONEY_COLUMNS[1:]].astype(float)
         data.to_csv('{}/{}_{}_{}'.format(cache_folder, code, t_type, k_type))
 
     return data
 
+def get_and_cache(code: str, t_type: str, k_type: str):
+    cache_folder = "history_data"
+    if not os.path.exists(cache_folder):
+        os.mkdir(cache_folder)
+    if os.path.exists('{}/{}_{}_{}'.format(cache_folder, code, t_type, k_type)):
+        print("read from csv")
+        data = pd.read_csv('{}/{}_{}_{}'.format(cache_folder, code, t_type, k_type))
+
+    #接口参数到东方财富的适配
+    else:
+        if code == 'sh':
+            sect_id = 1
+            code = '000001'
+        elif code == 'sz':
+            sect_id = 0
+            code = '399001'
+        elif code == 'cyb':
+            sect_id = 0
+            code = '399006'
+        elif code.startswith('6'):
+            sect_id = 1
+        else:
+            sect_id = 0
+        # 默认前复权
+        fqt = {'bfq': 0, 'qfq': 1, 'hfq': 2}[k_type]
+        klt = {'d': 101, 'w': 102, 'm': 103}[t_type]
+        url = EAST_MONEY_URL.format(sect_id, code, klt, fqt)
+        with urllib.request.urlopen(url) as req:
+            # 返回的是多重嵌套字典
+            print(url)
+            json_data = json.load(req)
+        k_lines_data = [data.split(',') for data in json_data['data']['klines']]
+        data = pd.DataFrame(k_lines_data, columns=EAST_MONEY_COLUMNS)
+        data['code'] = code
+        data[EAST_MONEY_COLUMNS[1:]] = data[EAST_MONEY_COLUMNS[1:]].astype(float)
+        data.to_csv('{}/{}_{}_{}'.format(cache_folder, code, t_type, k_type))
+
+    return data
 
 if __name__ == '__main__':
-    t = get_and_cache_with_dfcf('sh', 'qfq')
-    t = get_and_cache_with_dfcf('600016', 'qfq')
-    t = get_and_cache_with_dfcf('600016', 'bfq')
+    with open('codes.json') as f:
+        codes = json.load(f)
+    for t in ['d', 'w', 'm']:
+        for code in codes['codes']:
+            get_and_cache(code, t, 'qfq')
+            time.sleep(1)
+
+
+

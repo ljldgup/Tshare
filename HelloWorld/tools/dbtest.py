@@ -24,7 +24,6 @@ yconnect = create_engine(url)
 def store_k_data(code, yconnect):
     data1 = get_k_data(code, k_type='bfq', t_type='d')
     data1['id'] = data1.index - data1.index.min()
-    data1['code'] = code
     data1.to_sql('k_bfq', con=yconnect, if_exists='replace')
     time.sleep(0.1)
 

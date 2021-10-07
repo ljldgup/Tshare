@@ -53,7 +53,6 @@ def storekdata(code, my_conn=yconnect):
     if (len(data) == 0):
         data1 = get_k_data(code, k_type='bfq', t_type='d')
         data1['id'] = data1.index - data1.index.min()
-        data1['code'] = code
         data1.to_sql('k_bfq', con=my_conn, if_exists='append')
         time.sleep(0.1)
     else:

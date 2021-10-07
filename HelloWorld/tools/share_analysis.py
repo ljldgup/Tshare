@@ -73,6 +73,11 @@ def technical_indicators_gen(data):
         ma = data['close'].rolling(n).mean()
         data['bias_{}'.format(n)] = (data['close'] - ma) / ma * 100
 
+    # 短期涨幅累计
+    data['pct_20'] = data['close'].pct_change(20)
+    data['pct_40'] = data['close'].pct_change(40)
+    data['pct_60'] = data['close'].pct_change(60)
+
     # 自适应均线
     # e = data['close'].diff(1).abs().rolling(60)
     return data
@@ -130,11 +135,6 @@ def train_feature_gen(data):
     data['ma_20_60_pct'] = (data['ma_20'] - data['ma_60']) / data['ma_60']
     data['ma_60_200_pct'] = (data['ma_60'] - data['ma_200']) / data['ma_200']
     data['ma_20_200_pct'] = (data['ma_20'] - data['ma_200']) / data['ma_200']
-
-    # 短期涨幅累计
-    data['pct_10'] = data['close'].pct_change(10)
-    data['pct_20'] = data['close'].pct_change(20)
-    data['pct_60'] = data['close'].pct_change(60)
 
     # 布林线相对
     data['close_bolling_upper'] = (data['close'] - data['bolling_upper']) / data['close']
@@ -310,12 +310,13 @@ def trade_success_classifiers_test(code):
     scaler = MinMaxScaler()
     x_scaled = scaler.fit_transform(X)
 
-    # 这里是随机分的，所以可能每次结果不一样
-    train_x, test_x, train_y, test_y = train_test_split(x_scaled, y, train_size=0.7)
+
     classifiers = [LinearSVC(C=1), SVC(kernel="rbf", C=0.01), KNeighborsClassifier(n_neighbors=5),
                    SGDClassifier(random_state=42), RandomForestClassifier(random_state=42),
                    GradientBoostingClassifier(), LogisticRegression()]
     for classifier in classifiers:
+        # 这里是随机分的，所以可能每次结果不一样
+        train_x, test_x, train_y, test_y = train_test_split(x_scaled, y, train_size=0.8)
         classifier.fit(train_x, train_y)
         pred_y = classifier.predict(test_x)
         print('-------------------------------------')
@@ -339,4 +340,4 @@ if __name__ == '__main__':
     coefficient_correlation(data_d, st='2019-01-10', names=codes)
     relative_growth(data_d, st='2019-01-10', names=codes)
     '''
-    # trade_success_classifiers_test('000725')
+    trade_success_classifiers_test('000725')

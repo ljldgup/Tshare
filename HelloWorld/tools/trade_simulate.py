@@ -3,19 +3,20 @@
 """
 import os
 import pandas as pd
-import numpy as numpy
+import numpy as np
 
 # tools 报错把 外层Helloworld 文件夹 右键 make directory as -> source root
 from tools.commom_tools import get_k_data
 
-
 # 自定义买入条件
 from tools.share_analysis import technical_indicators_gen
+
 
 def down_trade_in(data):
     t = data
     # 这里不知道为什么日期筛选，放在外面会出错
-    t = t[t['date'] > '2010-01-01']
+    # t = t[t['date'] > '2010-01-01']
+    t = t[t['close'] < t['ma_60']]
     t = t[data['pct'] < -4]
     return t.index
 
@@ -23,9 +24,12 @@ def up_trade_in(data):
     t = data
     # t = t[t['date'] > '2010-01-01']
     # t = t[t['ma_10'] >= t['ma_60']][t['ma_10'].shift(1) < t['ma_60'].shift(1)]
+    # t = t[t['pct_40'] < 0]
+    t = t[t['close'] >= t['ma_60']]
     t = t[t['close'] >= t['ma_60']]
     t = t[abs(t['pct']) > 4]
     return t.index
+
 
 # 模拟持股
 def trade_out(data, in_index, stop_loss_pct):
@@ -78,10 +82,16 @@ def virtual_trade_statics(data, in_function, out_function):
 
     t_dict = {'origin_index': origin_index, 'in_date': in_date, 'out_data': out_data, 'earning_pct': earning_pct}
     trade_data = pd.DataFrame(t_dict)
+    trade_data['earning_pct'] = trade_data['earning_pct'] * 100
     return trade_data
+
 
 if __name__ == '__main__':
     # 前复权，不然技术指标没有意义
-    data = get_k_data('000725', 'd', 'qfq')
+    data = get_k_data('600072', 'd', 'qfq')
     data = technical_indicators_gen(data)
-    t = virtual_trade_statics(data, up_trade_in, trade_out)
+    ans = virtual_trade_statics(data, up_trade_in, trade_out)
+    print("合计盈利", ans['earning_pct'].sum())
+    print("盈利次数", (ans['earning_pct'] > 1).sum())
+    print("亏损次数", (ans['earning_pct'] < -1).sum())
+    ans['earning_pct'].hist()
