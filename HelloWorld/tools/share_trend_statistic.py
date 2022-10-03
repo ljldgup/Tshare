@@ -6,8 +6,8 @@ import datetime
 import matplotlib.pyplot as plt
 import pandas as pd
 
-# tools 报错把 外层Helloworld 文件夹 右键 make directory as -> source root
-from tools.commom_tools import two_digit_percent, get_k_data
+# tools 报错把 外层Helloworld 文件夹 右键 make directory as -> source root, 其他改法django无法启动
+from tools.commom_tools import get_k_data
 
 # 支持中文
 plt.rcParams['font.sans-serif'] = ['KaiTi']  # 用来正常显示中文标签
@@ -36,9 +36,9 @@ class Share:
 
         # 默认上涨下跌判断条件
         if code == 'sh' or code == 'sz' or code == 'cyb':
-            self.set_judge_condition(0.1, 4, 6, -0.1, 4, -6)
+            self.set_judge_condition(0.1, 5, 6, -0.1, 5, -6)
         else:
-            self.set_judge_condition(0.1, 4, 15, -0.1, 4, -15)
+            self.set_judge_condition(0.1, 5, 15, -0.1, 5, -15)
 
     def set_judge_condition(self, up_start_pct, up_last_periods, up_pct, down_start_pct, down_last_periods, down_pct):
         # 上涨，下跌开始判定涨跌比百分率，持续周，合格百分比波动
@@ -101,8 +101,8 @@ class Share:
 
         return peak_index
 
-    # 从基本数据self.bas_data提取趋势数据 self.trend_data
-    def get_trend_prd(self):
+    # 从基本数据self.bas_data 计算趋势数据 self.trend_data
+    def cal_trend_prd(self):
 
         data = self.bas_data
         # 提取上升下降趋势的维持时间，涨幅
@@ -214,7 +214,7 @@ class Share:
             start_price = self.ori_data_w['close'][trend['start_w_index'][first] - 1]
             end_price = self.ori_data_w['close'][trend['end_w_index'][first]]
             merged_trend.loc[merged_index] = [trend['start_pos'][first], trend['end_pos'][last],
-                                              100 * (end_price / start_price - 1),
+                                              100 * (trend['close'][last] / trend['open'][first] - 1),
                                               trend['end_w_index'][last] - trend['start_w_index'][first] + 1,
                                               trend['open'][first], trend['close'][last],
                                               ]
@@ -242,8 +242,10 @@ class Share:
         # 对于上升趋势的总体统计
         data = self.bas_data
         if type == 'up':
+            print('上涨趋势统计')
             trend_data = self.trend_data[self.trend_data['pct'] > 0]
         elif type == 'down':
+            print('下跌趋势统计')
             trend_data = self.trend_data[self.trend_data['pct'] < 0]
         else:
             return
@@ -293,7 +295,7 @@ class Share:
         result_trend_data.append(
             trend_data[trend_data['last_periods'] > time][required_columns])
         result_trend_data.append(
-            trend_data[trend_data['last_periods'] <= time][abs(trend_data['pct']) >= abs(pct)][required_columns])
+            trend_data[trend_data['last_periods'] <= time][abs(trend_data['pct']) > abs(pct)][required_columns])
 
         result_str = '非融合趋势中:\n'
 
@@ -309,8 +311,8 @@ class Share:
 
         # 上涨猛烈程度评判,只能用来短期是否有反抽之类，没有太大用
         potability = len(result_trend_data[2]) / len(trend_data)
-        result_str += '{:.2f}周内上涨幅度 >= {:.2f}%的概率: {:.2f} %\n'.format(time, pct, potability)
-        result_str += '（上涨猛烈程度，用于看短期反抽或回撤，参考价值不大'
+        result_str += '{:.2f}周内幅度 > {:.2f}%的概率: {:.2f} %\n'.format(time, pct, potability)
+        result_str += '（猛烈程度，用来确定是回抽或者回撤的可能性\n'
         result_str += str(result_trend_data[2]) + '\n'
 
         print('-------------------------------------------------------------------------------')
@@ -380,8 +382,8 @@ class Share:
             merged_trend = self.merged_trend[trend_func[trend](self.merged_trend['pct'])]
             print('{0}占比约{1:.2f}%'.format(trend,
                                           100 * len(lines[trend_func[trend](lines['pct_x'])]) / (
-                                                  merged_trend['end_d_index'].sum() - merged_trend[
-                                              'start_d_index'].sum())))
+                                                  merged_trend['end_d_index'].sum() -
+                                                  merged_trend['start_d_index'].sum())))
 
         _, ax = plt.subplots(2, 2)
         print("k线中各类型占比:")
@@ -399,7 +401,7 @@ class Share:
 
     def statistic(self):
         self.get_bas_dat()
-        self.get_trend_prd()
+        self.cal_trend_prd()
         self.merge_trend_data()
         # self.gen_up_sta()
 
@@ -407,12 +409,20 @@ class Share:
 if __name__ == '__main__':
     # use_proxy()
 
-    share = Share('sz')
-    # 上证指数的周线系数可用度较高
-    # share.set_judge_condition(1, 2, 6, -1, 2, -6)
-    # share.set_judge_condition(1, 2, 15, -1, 2, -15)
-    share.statistic()
+    cyb = Share('cyb')
+    sh = Share('sh')
+    sz = Share('sz')
+
+    share = cyb
+    for share in [sh, sz, cyb]:
+        # 上证指数的周线系数可用度较高
+        # share.set_judge_condition(1, 2, 6, -1, 2, -6)
+        # share.set_judge_condition(1, 2, 15, -1, 2, -15)
+        share.statistic()
+
     share.gen_trend_statistic()
+    share.gen_trend_statistic(type='down')
+
     # share.trend_compare(32, 13)
     share.trend_compare()
     # share.volatility('2014-06-30','2015-05-30')

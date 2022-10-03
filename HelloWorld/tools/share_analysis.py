@@ -257,7 +257,7 @@ def cluster_test(data):
     x, date = share_period_genderate(data, 40)
     scaler = MinMaxScaler()
     x = scaler.fit_transform(x)
-    kmeans = KMeans(n_clusters=12)
+    kmeans = KMeans(n_clusters=30)
     y_pred = kmeans.fit_predict(x)
 
     '''
@@ -328,11 +328,11 @@ def trade_success_classifiers_test(code):
 
 
 if __name__ == '__main__':
-    '''
+
     # 对同一只股票不同时间段进行聚类
     data_d = get_k_data('sh', 'd', 'qfq')
     ans = cluster_test(data_d)
-    '''
+
 
     '''
     # 相关性测试
@@ -340,4 +340,4 @@ if __name__ == '__main__':
     coefficient_correlation(data_d, st='2019-01-10', names=codes)
     relative_growth(data_d, st='2019-01-10', names=codes)
     '''
-    trade_success_classifiers_test('000725')
+    # trade_success_classifiers_test('sh')
