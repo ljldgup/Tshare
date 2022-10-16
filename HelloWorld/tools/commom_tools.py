@@ -22,6 +22,10 @@ EAST_MONEY_URL = 'http://push2his.eastmoney.com/api/qt/stock/kline/get?fields1=f
 EAST_MONEY_COLUMNS = ['date', 'open', 'close', 'high', 'low', 'volume', 'turnover', 'amplitude ', 'pct',
                       'turnover_rate']
 
+'''
+财务数据 type 0 按报告期， 1 年度， 2 按单季度
+'''
+EAST_MONEY_FINICAL_URL = 'http://emweb.securities.eastmoney.com/PC_HSF10/NewFinanceAnalysis/ZYZBAjaxNew?type={}&code={}&beg=0&end=20500101'
 
 def use_proxy():
     HTTP_PROXY = "http_proxy"
@@ -32,7 +36,6 @@ def use_proxy():
     print(os.environ["https_proxy"])
 
 
-# 不复权，或者指数使用tshare，否则使用洞房财富
 # 全部用东方财富
 def get_k_data(code, t_type, k_type):
     # if k_type == 'bfq' or code == 'sh' or code == 'sz' or code == 'cyb':
@@ -49,6 +52,9 @@ def two_digit_percent(number):
 
 # 东方财富主要用于复权数据，tushare复权数据有问题
 def get_and_cache_with_dfcf(code: str, t_type: str, k_type: str):
+    if not os.path.exists('cached_data/'):
+        os.mkdir('cached_data/')
+
     cache_folder = 'cached_data/' + datetime.now().strftime("%Y-%m-%d")
     if not os.path.exists(cache_folder):
         os.mkdir(cache_folder)
