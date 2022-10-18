@@ -299,21 +299,16 @@ class Share:
 
         result_str = '非融合趋势中:\n'
 
-        # 根据统计，幅度增加的可能性
-        potability = len(result_trend_data[0]) / len(trend_data) * 100
-        result_str += '幅度 > {:.2f}% 的概率 {:.2f}%\n'.format(pct, potability)
-        result_str += str(result_trend_data[0]) + '\n'
 
-        # 根据统计，时长增加的可能性
+        # 根据统计，时长更大的可能性
         potability = len(result_trend_data[1]) / len(trend_data) * 100
         result_str += '持续时长 > {:.2f}周的概率 {:.2f}%\n'.format(time, potability)
         result_str += str(result_trend_data[1]) + '\n'
 
-        # 上涨猛烈程度评判,只能用来短期是否有反抽之类，没有太大用
-        potability = len(result_trend_data[2]) / len(trend_data)
-        result_str += '{:.2f}周内幅度 > {:.2f}%的概率: {:.2f} %\n'.format(time, pct, potability)
-        result_str += '（猛烈程度，用来确定是回抽或者回撤的可能性\n'
-        result_str += str(result_trend_data[2]) + '\n'
+        # 根据统计，幅度更大的可能性
+        potability = len(result_trend_data[0]) / len(trend_data) * 100
+        result_str += '幅度 > {:.2f}% 的概率 {:.2f}%\n'.format(pct, potability)
+        result_str += str(result_trend_data[0]) + '\n'
 
         print('-------------------------------------------------------------------------------')
         print(result_str)

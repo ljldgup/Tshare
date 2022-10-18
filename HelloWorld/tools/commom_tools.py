@@ -26,6 +26,10 @@ CODE_SECT_ID_MAP = {'sh': 1, '000001': 1, '399006': 1}
 FUQUAN_TYPE_MAP = {'bfq': 0, 'qfq': 1, 'hfq': 2}
 PERIOD_TYPE_MAP = {'d': 101, 'w': 102, 'm': 103}
 
+'''
+财务数据 type 0 按报告期， 1 年度， 2 按单季度
+'''
+EAST_MONEY_FINICAL_URL = 'http://emweb.securities.eastmoney.com/PC_HSF10/NewFinanceAnalysis/ZYZBAjaxNew?type={}&code={}&beg=0&end=20500101'
 
 def use_proxy():
     HTTP_PROXY = "http_proxy"
@@ -75,6 +79,9 @@ def get_and_cache_with_dfcf(code: str, t_type: str, k_type: str):
     code, sect_id = get_code_and_sect_id(code)
     if not os.path.exists('cached_data'):
         os.mkdir('cached_data')
+
+    if not os.path.exists('cached_data/'):
+        os.mkdir('cached_data/')
 
     cache_folder = 'cached_data/' + datetime.now().strftime("%Y-%m-%d")
     if not os.path.exists(cache_folder):
